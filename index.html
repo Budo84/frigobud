@@ -62,8 +62,8 @@
         #freezer-area .area-content { background: var(--freezer-color); }
         
         /* Food Cards & Qty Controls */
-        .card { background: var(--card-bg); padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .card-info { display: flex; align-items: center; gap: 12px; }
+        .card { background: var(--card-bg); padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); flex-wrap: wrap; gap: 10px; }
+        .card-info { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 150px; }
         .card-icon { font-size: 1.5rem; }
         .card-details h4 { margin: 0 0 5px 0; font-size: 1rem; }
         
@@ -73,11 +73,11 @@
         .qty-text { font-size: 0.85rem; font-weight: 600; color: #555; }
         
         .card-meta { text-align: right; display: flex; align-items: center; gap: 10px; }
-        .card-date { font-size: 0.85rem; font-weight: 600; padding: 4px 8px; border-radius: 4px; background: #eee; }
+        .card-date { font-size: 0.8rem; font-weight: 600; padding: 5px 8px; border-radius: 4px; background: #eee; display: flex; align-items: center; gap: 5px; white-space: nowrap; }
         .date-danger { background: var(--danger); color: white; }
         .date-warning { background: var(--warning); color: white; }
         
-        .btn-delete { background: none; border: none; color: var(--danger); font-size: 1.2rem; cursor: pointer; padding: 0; }
+        .btn-delete { background: none; border: none; color: var(--danger); font-size: 1.2rem; cursor: pointer; padding: 0; margin-left: 5px; }
         
         /* Tools Section */
         .tools-section { margin-top: 30px; text-align: center; padding: 20px; background: var(--card-bg); border-radius: 12px; }
@@ -177,9 +177,10 @@
 
     const icons = { 'carne': '🍗', 'verdura': '🥦', 'latticini': '🧀', 'pronti': '🍲', 'altro': '📦' };
 
+    // Cambia il testo della label nel form in base a frigo/freezer
     function updateDateLabel() {
         const loc = document.getElementById('location').value;
-        document.getElementById('dateLabel').innerText = loc === 'frigo' ? 'Data di Scadenza' : 'Data Immissione';
+        document.getElementById('dateLabel').innerText = loc === 'frigo' ? 'Data di Scadenza' : 'Data di Congelamento';
     }
 
     function addItem() {
@@ -212,16 +213,13 @@
     function changeQty(id, delta) {
         const item = inventory.find(i => i.id === id);
         if(item) {
-            // Controllo per chi ha salvataggi vecchi puramente testuali (es "2 fette")
             let numericQty = Number(item.qty);
             if(isNaN(numericQty)) {
                 alert("Questo è un alimento col vecchio formato testuale. Eliminalo e riaggiungilo per usare questa funzione!");
                 return;
             }
-            
             item.qty = numericQty + delta;
             
-            // Se la quantità arriva a 0, eliminiamo l'alimento
             if(item.qty <= 0) {
                 deleteItem(id);
             } else {
@@ -236,6 +234,7 @@
     }
 
     function checkDate(dateStr, location) {
+        // Il freezer non va mai "in rosso", ritorna solo lo stile base
         if(location === 'freezer') return 'card-date'; 
         
         const today = new Date();
@@ -270,7 +269,9 @@
             const dateClass = checkDate(item.date, item.location);
             const formattedDate = new Date(item.date).toLocaleDateString('it-IT');
 
-            // Gestione interfaccia quantità (compatibilità con vecchi dati)
+            // DIFFERENZIAZIONE TESTUALE TRA FRIGO E FREEZER SULLA CARD
+            const dateLabelText = item.location === 'frigo' ? '⏳ Scade:' : '❄️ Congelato:';
+
             let qtyHTML = '';
             if (isNaN(Number(item.qty))) {
                 qtyHTML = `<span class="qty-text">${item.qty}</span>`;
@@ -295,7 +296,7 @@
                         </div>
                     </div>
                     <div class="card-meta">
-                        <span class="${dateClass}">${formattedDate}</span>
+                        <span class="${dateClass}">${dateLabelText} ${formattedDate}</span>
                         <button class="btn-delete" onclick="deleteItem(${item.id})">✖</button>
                     </div>
                 </div>
@@ -306,7 +307,7 @@
         });
     }
 
-    function exportJSON() { /* ... codice identico a prima ... */
+    function exportJSON() {
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(inventory));
         const downloadAnchorNode = document.createElement('a');
         downloadAnchorNode.setAttribute("href", dataStr);
@@ -316,7 +317,7 @@
         downloadAnchorNode.remove();
     }
 
-    function importJSON(event) { /* ... codice identico a prima ... */
+    function importJSON(event) {
         const file = event.target.files[0];
         if (!file) return;
         const reader = new FileReader();
