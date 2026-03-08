@@ -33,7 +33,7 @@
         .container { max-width: 1000px; margin: 0 auto; }
         
         /* Form Section */
-        .form-section { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; align-items: end; }
+        .form-section { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 15px; align-items: end; }
         
         .form-group { display: flex; flex-direction: column; }
         .form-group label { font-size: 0.85rem; font-weight: 600; margin-bottom: 5px; }
@@ -43,7 +43,7 @@
         .btn-add { background: #2c3e50; color: white; height: 40px; }
         .btn-add:hover { background: #1a252f; }
 
-        /* Controls Section (Ricerca e Ordine) */
+        /* Controls Section */
         .controls-section { display: flex; gap: 15px; margin-bottom: 20px; }
         .controls-section input, .controls-section select { padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-family: inherit; flex: 1; }
         @media (max-width: 768px) { .controls-section { flex-direction: column; } }
@@ -61,24 +61,42 @@
         #frigo-area .area-content { background: var(--frigo-color); }
         #freezer-area .area-content { background: var(--freezer-color); }
         
-        /* Food Cards */
+        /* Food Cards & Qty Controls */
         .card { background: var(--card-bg); padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .card-info { display: flex; align-items: center; gap: 12px; }
         .card-icon { font-size: 1.5rem; }
-        .card-details h4 { margin: 0; font-size: 1rem; }
-        .card-details p { margin: 0; font-size: 0.8rem; color: #666; }
+        .card-details h4 { margin: 0 0 5px 0; font-size: 1rem; }
         
-        .card-meta { text-align: right; }
+        .qty-controls { display: flex; align-items: center; gap: 8px; }
+        .btn-qty { padding: 0; width: 26px; height: 26px; border-radius: 4px; background: #eee; color: #333; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; }
+        .btn-qty:hover { background: #ddd; }
+        .qty-text { font-size: 0.85rem; font-weight: 600; color: #555; }
+        
+        .card-meta { text-align: right; display: flex; align-items: center; gap: 10px; }
         .card-date { font-size: 0.85rem; font-weight: 600; padding: 4px 8px; border-radius: 4px; background: #eee; }
         .date-danger { background: var(--danger); color: white; }
         .date-warning { background: var(--warning); color: white; }
         
-        .btn-delete { background: none; border: none; color: var(--danger); font-size: 1.2rem; cursor: pointer; margin-left: 10px; }
+        .btn-delete { background: none; border: none; color: var(--danger); font-size: 1.2rem; cursor: pointer; padding: 0; }
         
         /* Tools Section */
         .tools-section { margin-top: 30px; text-align: center; padding: 20px; background: var(--card-bg); border-radius: 12px; }
-        .tools-section button { background: #7f8c8d; color: white; margin: 0 5px; }
+        .tools-section button { background: #7f8c8d; color: white; margin: 5px; }
+        .tools-section .btn-pdf { background: #e67e22; }
         .tools-section input[type="file"] { display: none; }
+
+        /* --- STILI PER LA STAMPA / PDF --- */
+        @media print {
+            body { background-color: #fff; padding: 0; color: #000; }
+            .form-section, .controls-section, .tools-section, .btn-delete, .btn-qty { display: none !important; }
+            .container { max-width: 100%; margin: 0; }
+            .dashboard { display: block; } 
+            .area { box-shadow: none; border: 2px solid #ddd; margin-bottom: 30px; break-inside: avoid; }
+            .area-content { background: #fff !important; } 
+            .area-header { color: #000; background: #f0f0f0 !important; border-bottom: 2px solid #ddd; }
+            .card { box-shadow: none; border-bottom: 1px solid #eee; margin-bottom: 0; border-radius: 0; padding: 10px; }
+            .card-date { background: none; border: 1px solid #ccc; color: #333; }
+        }
     </style>
 </head>
 <body>
@@ -90,12 +108,16 @@
 
     <div class="form-section">
         <div class="form-group">
-            <label>Nome Alimento</label>
+            <label>Alimento</label>
             <input type="text" id="name" placeholder="es. Pollo" required>
         </div>
         <div class="form-group">
-            <label>Quantità</label>
-            <input type="text" id="qty" placeholder="es. 2 petti" required>
+            <label>Quantità (n°)</label>
+            <input type="number" id="qty" placeholder="es. 2" min="1" required>
+        </div>
+        <div class="form-group">
+            <label>Unità (opz.)</label>
+            <input type="text" id="unit" placeholder="es. fette, kg">
         </div>
         <div class="form-group">
             <label>Posizione</label>
@@ -141,10 +163,11 @@
     </div>
 
     <div class="tools-section">
-        <h3>Backup Dati</h3>
-        <p style="font-size: 0.8rem; margin-bottom: 10px; color: #666;">Salva o ripristina i tuoi dati usando un file JSON</p>
-        <button onclick="exportJSON()">⬇️ Esporta JSON</button>
-        <button onclick="document.getElementById('importFile').click()">⬆️ Importa JSON</button>
+        <h3>Strumenti</h3>
+        <p style="font-size: 0.8rem; margin-bottom: 10px; color: #666;">Salva i tuoi dati o scarica l'inventario</p>
+        <button class="btn-pdf" onclick="window.print()">📄 Salva come PDF</button>
+        <button onclick="exportJSON()">⬇️ Esporta Backup (JSON)</button>
+        <button onclick="document.getElementById('importFile').click()">⬆️ Importa Backup</button>
         <input type="file" id="importFile" accept=".json" onchange="importJSON(event)">
     </div>
 </div>
@@ -152,46 +175,60 @@
 <script>
     let inventory = JSON.parse(localStorage.getItem('fridgeData')) || [];
 
-    const icons = {
-        'carne': '🍗',
-        'verdura': '🥦',
-        'latticini': '🧀',
-        'pronti': '🍲',
-        'altro': '📦'
-    };
+    const icons = { 'carne': '🍗', 'verdura': '🥦', 'latticini': '🧀', 'pronti': '🍲', 'altro': '📦' };
 
     function updateDateLabel() {
         const loc = document.getElementById('location').value;
-        document.getElementById('dateLabel').innerText = loc === 'frigo' ? 'Data di Scadenza' : 'Data di Immissione';
+        document.getElementById('dateLabel').innerText = loc === 'frigo' ? 'Data di Scadenza' : 'Data Immissione';
     }
 
     function addItem() {
         const name = document.getElementById('name').value;
-        const qty = document.getElementById('qty').value;
+        const qty = parseInt(document.getElementById('qty').value);
+        const unit = document.getElementById('unit').value.trim();
         const location = document.getElementById('location').value;
         const category = document.getElementById('category').value;
         const date = document.getElementById('date').value;
 
-        if(!name || !qty || !date) return alert("Compila tutti i campi!");
+        if(!name || !qty || !date) return alert("Compila Nome, Quantità e Data!");
 
-        const newItem = {
-            id: Date.now(),
-            name, qty, location, category, date
-        };
+        const newItem = { id: Date.now(), name, qty, unit, location, category, date };
 
         inventory.push(newItem);
         saveData();
         render();
         
-        // Reset campi testo
         document.getElementById('name').value = '';
         document.getElementById('qty').value = '';
+        document.getElementById('unit').value = '';
     }
 
     function deleteItem(id) {
         inventory = inventory.filter(item => item.id !== id);
         saveData();
         render();
+    }
+
+    function changeQty(id, delta) {
+        const item = inventory.find(i => i.id === id);
+        if(item) {
+            // Controllo per chi ha salvataggi vecchi puramente testuali (es "2 fette")
+            let numericQty = Number(item.qty);
+            if(isNaN(numericQty)) {
+                alert("Questo è un alimento col vecchio formato testuale. Eliminalo e riaggiungilo per usare questa funzione!");
+                return;
+            }
+            
+            item.qty = numericQty + delta;
+            
+            // Se la quantità arriva a 0, eliminiamo l'alimento
+            if(item.qty <= 0) {
+                deleteItem(id);
+            } else {
+                saveData();
+                render();
+            }
+        }
     }
 
     function saveData() {
@@ -207,9 +244,9 @@
         const diffTime = itemDate - today;
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-        if(diffDays < 0) return 'card-date date-danger'; // Scaduto
-        if(diffDays <= 2) return 'card-date date-warning'; // In scadenza
-        return 'card-date'; // Ok
+        if(diffDays < 0) return 'card-date date-danger';
+        if(diffDays <= 2) return 'card-date date-warning';
+        return 'card-date';
     }
 
     function render() {
@@ -219,28 +256,34 @@
         frigoList.innerHTML = '';
         freezerList.innerHTML = '';
 
-        // Preleviamo i valori della ricerca e dell'ordinamento
         const searchTerm = document.getElementById('searchBar').value.toLowerCase();
         const sortBy = document.getElementById('sortBy').value;
 
-        // 1. Filtriamo per ricerca
-        let filteredInventory = inventory.filter(item => 
-            item.name.toLowerCase().includes(searchTerm)
-        );
+        let filteredInventory = inventory.filter(item => item.name.toLowerCase().includes(searchTerm));
 
-        // 2. Ordiniamo
         filteredInventory.sort((a, b) => {
-            if (sortBy === 'name') {
-                return a.name.localeCompare(b.name); // Ordine alfabetico
-            } else {
-                return new Date(a.date) - new Date(b.date); // Ordine per data
-            }
+            if (sortBy === 'name') return a.name.localeCompare(b.name);
+            return new Date(a.date) - new Date(b.date);
         });
 
-        // 3. Stampiamo le card
         filteredInventory.forEach(item => {
             const dateClass = checkDate(item.date, item.location);
             const formattedDate = new Date(item.date).toLocaleDateString('it-IT');
+
+            // Gestione interfaccia quantità (compatibilità con vecchi dati)
+            let qtyHTML = '';
+            if (isNaN(Number(item.qty))) {
+                qtyHTML = `<span class="qty-text">${item.qty}</span>`;
+            } else {
+                const unitText = item.unit ? ` ${item.unit}` : '';
+                qtyHTML = `
+                    <div class="qty-controls">
+                        <button class="btn-qty" onclick="changeQty(${item.id}, -1)">-</button>
+                        <span class="qty-text">${item.qty}${unitText}</span>
+                        <button class="btn-qty" onclick="changeQty(${item.id}, 1)">+</button>
+                    </div>
+                `;
+            }
 
             const cardHTML = `
                 <div class="card">
@@ -248,7 +291,7 @@
                         <div class="card-icon">${icons[item.category]}</div>
                         <div class="card-details">
                             <h4>${item.name}</h4>
-                            <p>${item.qty}</p>
+                            ${qtyHTML}
                         </div>
                     </div>
                     <div class="card-meta">
@@ -258,16 +301,12 @@
                 </div>
             `;
 
-            if(item.location === 'frigo') {
-                frigoList.innerHTML += cardHTML;
-            } else {
-                freezerList.innerHTML += cardHTML;
-            }
+            if(item.location === 'frigo') frigoList.innerHTML += cardHTML;
+            else freezerList.innerHTML += cardHTML;
         });
     }
 
-    // --- Funzioni per Import/Export JSON ---
-    function exportJSON() {
+    function exportJSON() { /* ... codice identico a prima ... */
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(inventory));
         const downloadAnchorNode = document.createElement('a');
         downloadAnchorNode.setAttribute("href", dataStr);
@@ -277,34 +316,24 @@
         downloadAnchorNode.remove();
     }
 
-    function importJSON(event) {
+    function importJSON(event) { /* ... codice identico a prima ... */
         const file = event.target.files[0];
         if (!file) return;
         const reader = new FileReader();
         reader.onload = function(e) {
             try {
                 const importedData = JSON.parse(e.target.result);
-                if(Array.isArray(importedData)) {
-                    inventory = importedData;
-                    saveData();
-                    render();
-                    alert("Dati importati con successo!");
-                } else {
-                    alert("Formato file non valido.");
-                }
-            } catch (err) {
-                alert("Errore nella lettura del file JSON.");
-            }
+                if(Array.isArray(importedData)) { inventory = importedData; saveData(); render(); alert("Dati importati con successo!"); } 
+                else { alert("Formato file non valido."); }
+            } catch (err) { alert("Errore nella lettura del file JSON."); }
             event.target.value = '';
         };
         reader.readAsText(file);
     }
 
-    // Inizializzazione
     updateDateLabel();
     render();
 
-    // --- Registrazione Service Worker per PWA ---
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('sw.js')
