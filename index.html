@@ -24,6 +24,7 @@
             --danger: #ff5252;
             --warning: #ffb142;
             --success: #2ecc71;
+            --info: #3498db;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -60,7 +61,6 @@
         .area-header { padding: 15px; color: white; text-align: center; font-weight: 700; font-size: 1.2rem; }
         .area-content { padding: 15px; min-height: 100px; }
         
-        /* Colori Aree */
         #spesa-area .area-header { background: var(--spesa-header); }
         #spesa-area .area-content { background: var(--spesa-color); }
         #frigo-area .area-header { background: var(--frigo-header); }
@@ -87,13 +87,16 @@
         .date-danger { background: var(--danger); color: white; }
         .date-warning { background: var(--warning); color: white; }
         
-        .btn-delete { background: none; border: none; color: var(--danger); font-size: 1.2rem; cursor: pointer; padding: 0; margin-left: 5px; }
-        .btn-check { background: none; border: none; color: var(--success); font-size: 1.2rem; cursor: pointer; padding: 0; margin-right: 5px; }
+        /* Pulsanti Azione */
+        .btn-action-icon { background: none; border: none; font-size: 1.2rem; cursor: pointer; padding: 0; margin-left: 5px; }
+        .c-delete { color: var(--danger); }
+        .c-check { color: var(--success); }
+        .c-move { color: var(--info); }
         
         /* Picker Data Spesa Inline */
-        .inline-date-picker { display: flex; align-items: center; gap: 5px; background: #fff; padding: 5px; border-radius: 6px; border: 1px solid #ccc; }
-        .inline-date-picker input { border: none; outline: none; font-family: inherit; font-size: 0.8rem; }
-        .inline-date-picker button { background: var(--success); color: white; padding: 4px 8px; font-size: 0.8rem; height: auto; }
+        .inline-date-picker { display: flex; align-items: center; gap: 5px; background: #fff; padding: 5px; border-radius: 6px; border: 1px solid #ccc; flex-wrap: wrap; justify-content: flex-end; }
+        .inline-date-picker input, .inline-date-picker select { border: 1px solid #eee; border-radius: 4px; padding: 2px; outline: none; font-family: inherit; font-size: 0.8rem; }
+        .inline-date-picker button { background: var(--success); color: white; padding: 4px 8px; font-size: 0.8rem; height: auto; margin-left: 5px; }
         
         /* Tools Section */
         .tools-section { margin-top: 30px; text-align: center; padding: 20px; background: var(--card-bg); border-radius: 12px; }
@@ -104,7 +107,7 @@
         /* --- STILI PER LA STAMPA / PDF --- */
         @media print {
             body { background-color: #fff; padding: 0; color: #000; }
-            .form-section, .controls-section, .tools-section, .btn-delete, .btn-qty, .btn-check { display: none !important; }
+            .form-section, .controls-section, .tools-section, .btn-action-icon, .btn-qty { display: none !important; }
             .container { max-width: 100%; margin: 0; }
             .dashboard { display: block; } 
             .area { box-shadow: none; border: 2px solid #ddd; margin-bottom: 30px; break-inside: avoid; }
@@ -197,7 +200,6 @@
 </div>
 
 <script>
-    // Inizializzazione dati
     let inventory = JSON.parse(localStorage.getItem('fridgeData')) || [];
     let shoppingList = JSON.parse(localStorage.getItem('shoppingData')) || [];
 
@@ -208,7 +210,6 @@
         document.getElementById('dateLabel').innerText = loc === 'frigo' ? 'Scadenza (se Diretto)' : 'Congelamento (se Diretto)';
     }
 
-    // Aggiunge all'Inventario (Frigo/Freezer) O alla Spesa
     function addItem(target) {
         const name = document.getElementById('name').value;
         const qty = parseInt(document.getElementById('qty').value);
@@ -218,23 +219,15 @@
         const date = document.getElementById('date').value;
 
         if(!name || !qty) return alert("Compila almeno Nome e Quantità!");
-        
-        // Se lo metto direttamente in frigo/freezer, voglio la data. Per la spesa non serve.
         if(target === 'inventory' && !date) return alert("Seleziona una data per inserirlo direttamente!");
 
         const newItem = { id: Date.now(), name, qty, unit, location, category, date: date || '' };
 
-        if(target === 'inventory') {
-            inventory.push(newItem);
-            saveData();
-        } else {
-            shoppingList.push(newItem);
-            saveShoppingData();
-        }
+        if(target === 'inventory') { inventory.push(newItem); saveData(); } 
+        else { shoppingList.push(newItem); saveShoppingData(); }
         
         render();
         
-        // Reset rapido
         document.getElementById('name').value = '';
         document.getElementById('qty').value = '';
         document.getElementById('unit').value = '';
@@ -242,42 +235,47 @@
         document.getElementById('name').focus();
     }
 
-    // --- FUNZIONI LISTA SPESA ---
+    // --- FUNZIONI SPESA ---
     function deleteShoppingItem(id) {
         shoppingList = shoppingList.filter(item => item.id !== id);
         saveShoppingData();
         render();
     }
 
-    // Trasforma i pulsanti della card in un campo data
+    // Quando spunti l'acquisto dalla spesa, ti fa scegliere dove metterlo e la data
     function askDateForBoughtItem(id) {
         const item = shoppingList.find(i => i.id === id);
-        const labelTesto = item.location === 'frigo' ? 'Scade il:' : 'Congelato il:';
         
         document.getElementById(`action-${id}`).innerHTML = `
             <div class="inline-date-picker">
-                <span style="font-size:0.8rem; font-weight:bold; color:#555;">${labelTesto}</span>
+                <select id="buy-loc-${id}" onchange="updateInlineLabel('buy', ${id})">
+                    <option value="frigo" ${item.location === 'frigo' ? 'selected' : ''}>Frigo</option>
+                    <option value="freezer" ${item.location === 'freezer' ? 'selected' : ''}>Freezer</option>
+                </select>
+                <span id="buy-label-${id}" style="font-size:0.8rem; font-weight:bold; color:#555;">
+                    ${item.location === 'frigo' ? 'Scade:' : 'Congelato:'}
+                </span>
                 <input type="date" id="buy-date-${id}">
                 <button onclick="confirmPurchase(${id})">OK</button>
-                <button style="background:none; color:var(--danger);" onclick="render()">✖</button>
+                <button class="btn-action-icon c-delete" onclick="render()">✖</button>
             </div>
         `;
-        // Imposta la data di oggi come predefinita
         document.getElementById(`buy-date-${id}`).valueAsDate = new Date();
     }
 
-    // Sposta l'alimento dalla spesa al frigo/freezer
     function confirmPurchase(id) {
         const dateVal = document.getElementById(`buy-date-${id}`).value;
+        const locVal = document.getElementById(`buy-loc-${id}`).value;
         if(!dateVal) return alert("Devi inserire una data!");
         
         const itemIndex = shoppingList.findIndex(i => i.id === id);
         if(itemIndex > -1) {
             const item = shoppingList[itemIndex];
-            item.date = dateVal; // Aggiunge la data scelta
+            item.date = dateVal;
+            item.location = locVal; // Prende la posizione dal menu a tendina inline
             
-            inventory.push(item); // Sposta in inventario
-            shoppingList.splice(itemIndex, 1); // Rimuove dalla spesa
+            inventory.push(item);
+            shoppingList.splice(itemIndex, 1);
             
             saveData();
             saveShoppingData();
@@ -285,7 +283,50 @@
         }
     }
 
-    // --- FUNZIONI FRIGO E FREEZER ---
+    // Aggiorna l'etichetta "Scade/Congelato" in tempo reale quando cambi la tendina
+    function updateInlineLabel(prefix, id) {
+        const loc = document.getElementById(`${prefix}-loc-${id}`).value;
+        document.getElementById(`${prefix}-label-${id}`).innerText = loc === 'frigo' ? 'Scade:' : 'Congelato:';
+    }
+
+    // --- FUNZIONI SPOSTAMENTO (FRIGO <-> FREEZER) ---
+    function askMoveItem(id) {
+        const item = inventory.find(i => i.id === id);
+        // Suggeriamo automaticamente il posto opposto
+        const newLoc = item.location === 'frigo' ? 'freezer' : 'frigo';
+        
+        document.getElementById(`inv-action-${id}`).innerHTML = `
+            <div class="inline-date-picker">
+                <select id="move-loc-${id}" onchange="updateInlineLabel('move', ${id})">
+                    <option value="frigo" ${newLoc === 'frigo' ? 'selected' : ''}>Frigo</option>
+                    <option value="freezer" ${newLoc === 'freezer' ? 'selected' : ''}>Freezer</option>
+                </select>
+                <span id="move-label-${id}" style="font-size:0.8rem; font-weight:bold; color:#555;">
+                    ${newLoc === 'frigo' ? 'Scade:' : 'Congelato:'}
+                </span>
+                <input type="date" id="move-date-${id}">
+                <button onclick="confirmMove(${id})">OK</button>
+                <button class="btn-action-icon c-delete" onclick="render()">✖</button>
+            </div>
+        `;
+        document.getElementById(`move-date-${id}`).valueAsDate = new Date();
+    }
+
+    function confirmMove(id) {
+        const dateVal = document.getElementById(`move-date-${id}`).value;
+        const locVal = document.getElementById(`move-loc-${id}`).value;
+        if(!dateVal) return alert("Devi inserire la nuova data!");
+        
+        const item = inventory.find(i => i.id === id);
+        if(item) {
+            item.location = locVal;
+            item.date = dateVal;
+            saveData();
+            render();
+        }
+    }
+
+    // --- FUNZIONI BASE INVENTARIO ---
     function deleteItem(id) {
         inventory = inventory.filter(item => item.id !== id);
         saveData();
@@ -296,15 +337,13 @@
         const item = inventory.find(i => i.id === id);
         if(item) {
             let numericQty = Number(item.qty);
-            if(isNaN(numericQty)) return alert("Questo è un alimento col vecchio formato testuale. Eliminalo e riaggiungilo per usare questa funzione!");
+            if(isNaN(numericQty)) return alert("Elimina l'alimento e riaggiungilo per usare questa funzione!");
             item.qty = numericQty + delta;
-            
             if(item.qty <= 0) deleteItem(id);
             else { saveData(); render(); }
         }
     }
 
-    // --- SALVATAGGI ---
     function saveData() { localStorage.setItem('fridgeData', JSON.stringify(inventory)); }
     function saveShoppingData() { localStorage.setItem('shoppingData', JSON.stringify(shoppingList)); }
 
@@ -332,7 +371,7 @@
         const searchTerm = document.getElementById('searchBar').value.toLowerCase();
         const sortBy = document.getElementById('sortBy').value;
 
-        // 1. Render Lista Spesa
+        // 1. Render Spesa
         let filteredSpesa = shoppingList.filter(item => item.name.toLowerCase().includes(searchTerm));
         if(filteredSpesa.length === 0) spesaList.innerHTML = '<p style="text-align:center; color:#888; font-size:0.9rem;">Lista della spesa vuota! 🎉</p>';
         
@@ -351,8 +390,8 @@
                         </div>
                     </div>
                     <div class="card-meta" id="action-${item.id}">
-                        <button class="btn-check" title="Comprato!" onclick="askDateForBoughtItem(${item.id})">✔️</button>
-                        <button class="btn-delete" title="Elimina" onclick="deleteShoppingItem(${item.id})">✖</button>
+                        <button class="btn-action-icon c-check" title="Comprato!" onclick="askDateForBoughtItem(${item.id})">✔️</button>
+                        <button class="btn-action-icon c-delete" title="Elimina" onclick="deleteShoppingItem(${item.id})">✖</button>
                     </div>
                 </div>
             `;
@@ -393,9 +432,10 @@
                             ${qtyHTML}
                         </div>
                     </div>
-                    <div class="card-meta">
+                    <div class="card-meta" id="inv-action-${item.id}">
                         <span class="${dateClass}">${dateLabelText} ${formattedDate}</span>
-                        <button class="btn-delete" onclick="deleteItem(${item.id})">✖</button>
+                        <button class="btn-action-icon c-move" title="Sposta Frigo/Freezer" onclick="askMoveItem(${item.id})">🔄</button>
+                        <button class="btn-action-icon c-delete" title="Elimina" onclick="deleteItem(${item.id})">✖</button>
                     </div>
                 </div>
             `;
@@ -405,7 +445,7 @@
         });
     }
 
-    // --- IMPORT / EXPORT (AGGIORNATO PER SUPPORTARE LA SPESA) ---
+    // --- IMPORT / EXPORT ---
     function exportJSON() {
         const backupData = { inventory: inventory, shoppingList: shoppingList };
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData));
@@ -424,20 +464,12 @@
         reader.onload = function(e) {
             try {
                 const importedData = JSON.parse(e.target.result);
-                // Controllo compatibilità con vecchi backup (quando era solo un Array)
                 if(Array.isArray(importedData)) { 
-                    inventory = importedData; 
-                    shoppingList = [];
+                    inventory = importedData; shoppingList = [];
                 } else if (importedData.inventory) {
-                    inventory = importedData.inventory || [];
-                    shoppingList = importedData.shoppingList || [];
-                } else {
-                    return alert("Formato file non valido.");
-                }
-                saveData(); 
-                saveShoppingData();
-                render(); 
-                alert("Dati importati con successo!"); 
+                    inventory = importedData.inventory || []; shoppingList = importedData.shoppingList || [];
+                } else { return alert("Formato file non valido."); }
+                saveData(); saveShoppingData(); render(); alert("Dati importati con successo!"); 
             } catch (err) { alert("Errore nella lettura del file JSON."); }
             event.target.value = '';
         };
