@@ -18,9 +18,12 @@
             --frigo-header: #4caf50;
             --freezer-color: #e3f2fd;
             --freezer-header: #2196f3;
+            --spesa-color: #f3e5f5;
+            --spesa-header: #9b59b6;
             --card-bg: #ffffff;
             --danger: #ff5252;
             --warning: #ffb142;
+            --success: #2ecc71;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -39,56 +42,69 @@
         .form-group label { font-size: 0.85rem; font-weight: 600; margin-bottom: 5px; }
         .form-group input, .form-group select { padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-family: inherit; }
         
-        button { padding: 10px 15px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.2s; font-family: inherit; }
+        /* Modifica Pulsanti Form */
+        .form-actions { display: flex; gap: 10px; grid-column: 1 / -1; justify-content: flex-end; margin-top: 10px; }
+        button { padding: 10px 15px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.2s; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 5px; }
         .btn-add { background: #2c3e50; color: white; height: 40px; }
         .btn-add:hover { background: #1a252f; }
+        .btn-spesa { background: var(--spesa-header); color: white; height: 40px; }
+        .btn-spesa:hover { background: #8e44ad; }
 
         /* Controls Section */
         .controls-section { display: flex; gap: 15px; margin-bottom: 20px; }
         .controls-section input, .controls-section select { padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-family: inherit; flex: 1; }
         @media (max-width: 768px) { .controls-section { flex-direction: column; } }
         
-        /* Dashboard */
+        /* Aree Dashboard */
+        .area { border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .area-header { padding: 15px; color: white; text-align: center; font-weight: 700; font-size: 1.2rem; }
+        .area-content { padding: 15px; min-height: 100px; }
+        
+        /* Colori Aree */
+        #spesa-area .area-header { background: var(--spesa-header); }
+        #spesa-area .area-content { background: var(--spesa-color); }
+        #frigo-area .area-header { background: var(--frigo-header); }
+        #frigo-area .area-content { background: var(--frigo-color); }
+        #freezer-area .area-header { background: var(--freezer-header); }
+        #freezer-area .area-content { background: var(--freezer-color); }
+
         .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         @media (max-width: 768px) { .dashboard { grid-template-columns: 1fr; } }
         
-        .area { border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .area-header { padding: 15px; color: white; text-align: center; font-weight: 700; font-size: 1.2rem; }
-        #frigo-area .area-header { background: var(--frigo-header); }
-        #freezer-area .area-header { background: var(--freezer-header); }
-        
-        .area-content { padding: 15px; min-height: 200px; }
-        #frigo-area .area-content { background: var(--frigo-color); }
-        #freezer-area .area-content { background: var(--freezer-color); }
-        
-        /* Food Cards & Qty Controls */
+        /* Food Cards & Controls */
         .card { background: var(--card-bg); padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); flex-wrap: wrap; gap: 10px; }
         .card-info { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 150px; }
         .card-icon { font-size: 1.5rem; }
         .card-details h4 { margin: 0 0 5px 0; font-size: 1rem; }
         
         .qty-controls { display: flex; align-items: center; gap: 8px; }
-        .btn-qty { padding: 0; width: 26px; height: 26px; border-radius: 4px; background: #eee; color: #333; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; }
+        .btn-qty { padding: 0; width: 26px; height: 26px; border-radius: 4px; background: #eee; color: #333; font-size: 1.1rem; }
         .btn-qty:hover { background: #ddd; }
         .qty-text { font-size: 0.85rem; font-weight: 600; color: #555; }
         
-        .card-meta { text-align: right; display: flex; align-items: center; gap: 10px; }
+        .card-meta { text-align: right; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
         .card-date { font-size: 0.8rem; font-weight: 600; padding: 5px 8px; border-radius: 4px; background: #eee; display: flex; align-items: center; gap: 5px; white-space: nowrap; }
         .date-danger { background: var(--danger); color: white; }
         .date-warning { background: var(--warning); color: white; }
         
         .btn-delete { background: none; border: none; color: var(--danger); font-size: 1.2rem; cursor: pointer; padding: 0; margin-left: 5px; }
+        .btn-check { background: none; border: none; color: var(--success); font-size: 1.2rem; cursor: pointer; padding: 0; margin-right: 5px; }
+        
+        /* Picker Data Spesa Inline */
+        .inline-date-picker { display: flex; align-items: center; gap: 5px; background: #fff; padding: 5px; border-radius: 6px; border: 1px solid #ccc; }
+        .inline-date-picker input { border: none; outline: none; font-family: inherit; font-size: 0.8rem; }
+        .inline-date-picker button { background: var(--success); color: white; padding: 4px 8px; font-size: 0.8rem; height: auto; }
         
         /* Tools Section */
         .tools-section { margin-top: 30px; text-align: center; padding: 20px; background: var(--card-bg); border-radius: 12px; }
-        .tools-section button { background: #7f8c8d; color: white; margin: 5px; }
+        .tools-section button { background: #7f8c8d; color: white; margin: 5px; display: inline-flex; }
         .tools-section .btn-pdf { background: #e67e22; }
         .tools-section input[type="file"] { display: none; }
 
         /* --- STILI PER LA STAMPA / PDF --- */
         @media print {
             body { background-color: #fff; padding: 0; color: #000; }
-            .form-section, .controls-section, .tools-section, .btn-delete, .btn-qty { display: none !important; }
+            .form-section, .controls-section, .tools-section, .btn-delete, .btn-qty, .btn-check { display: none !important; }
             .container { max-width: 100%; margin: 0; }
             .dashboard { display: block; } 
             .area { box-shadow: none; border: 2px solid #ddd; margin-bottom: 30px; break-inside: avoid; }
@@ -112,7 +128,7 @@
             <input type="text" id="name" placeholder="es. Pollo" required>
         </div>
         <div class="form-group">
-            <label>Quantità (n°)</label>
+            <label>Quantità</label>
             <input type="number" id="qty" placeholder="es. 2" min="1" required>
         </div>
         <div class="form-group">
@@ -120,7 +136,7 @@
             <input type="text" id="unit" placeholder="es. fette, kg">
         </div>
         <div class="form-group">
-            <label>Posizione</label>
+            <label>Destinazione</label>
             <select id="location" onchange="updateDateLabel()">
                 <option value="frigo">Frigorifero</option>
                 <option value="freezer">Freezer</option>
@@ -137,10 +153,13 @@
             </select>
         </div>
         <div class="form-group">
-            <label id="dateLabel">Data di Scadenza</label>
-            <input type="date" id="date" required>
+            <label id="dateLabel">Data (solo se Diretto)</label>
+            <input type="date" id="date">
         </div>
-        <button class="btn-add" onclick="addItem()">Aggiungi</button>
+        <div class="form-actions">
+            <button class="btn-spesa" onclick="addItem('shopping')">🛒 Aggiungi a Lista Spesa</button>
+            <button class="btn-add" onclick="addItem('inventory')">➕ Aggiungi Diretto</button>
+        </div>
     </div>
 
     <div class="controls-section">
@@ -149,6 +168,11 @@
             <option value="date">⏱️ Ordina per Data</option>
             <option value="name">🔤 Ordina per Nome (A-Z)</option>
         </select>
+    </div>
+
+    <div class="area" id="spesa-area">
+        <div class="area-header">🛒 Lista della Spesa</div>
+        <div class="area-content" id="spesa-list"></div>
     </div>
 
     <div class="dashboard">
@@ -165,25 +189,27 @@
     <div class="tools-section">
         <h3>Strumenti</h3>
         <p style="font-size: 0.8rem; margin-bottom: 10px; color: #666;">Salva i tuoi dati o scarica l'inventario</p>
-        <button class="btn-pdf" onclick="window.print()">📄 Salva come PDF</button>
-        <button onclick="exportJSON()">⬇️ Esporta Backup (JSON)</button>
+        <button class="btn-pdf" onclick="window.print()">📄 Salva PDF</button>
+        <button onclick="exportJSON()">⬇️ Esporta Backup</button>
         <button onclick="document.getElementById('importFile').click()">⬆️ Importa Backup</button>
         <input type="file" id="importFile" accept=".json" onchange="importJSON(event)">
     </div>
 </div>
 
 <script>
+    // Inizializzazione dati
     let inventory = JSON.parse(localStorage.getItem('fridgeData')) || [];
+    let shoppingList = JSON.parse(localStorage.getItem('shoppingData')) || [];
 
     const icons = { 'carne': '🍗', 'verdura': '🥦', 'latticini': '🧀', 'pronti': '🍲', 'altro': '📦' };
 
-    // Cambia il testo della label nel form in base a frigo/freezer
     function updateDateLabel() {
         const loc = document.getElementById('location').value;
-        document.getElementById('dateLabel').innerText = loc === 'frigo' ? 'Data di Scadenza' : 'Data di Congelamento';
+        document.getElementById('dateLabel').innerText = loc === 'frigo' ? 'Scadenza (se Diretto)' : 'Congelamento (se Diretto)';
     }
 
-    function addItem() {
+    // Aggiunge all'Inventario (Frigo/Freezer) O alla Spesa
+    function addItem(target) {
         const name = document.getElementById('name').value;
         const qty = parseInt(document.getElementById('qty').value);
         const unit = document.getElementById('unit').value.trim();
@@ -191,19 +217,75 @@
         const category = document.getElementById('category').value;
         const date = document.getElementById('date').value;
 
-        if(!name || !qty || !date) return alert("Compila Nome, Quantità e Data!");
+        if(!name || !qty) return alert("Compila almeno Nome e Quantità!");
+        
+        // Se lo metto direttamente in frigo/freezer, voglio la data. Per la spesa non serve.
+        if(target === 'inventory' && !date) return alert("Seleziona una data per inserirlo direttamente!");
 
-        const newItem = { id: Date.now(), name, qty, unit, location, category, date };
+        const newItem = { id: Date.now(), name, qty, unit, location, category, date: date || '' };
 
-        inventory.push(newItem);
-        saveData();
+        if(target === 'inventory') {
+            inventory.push(newItem);
+            saveData();
+        } else {
+            shoppingList.push(newItem);
+            saveShoppingData();
+        }
+        
         render();
         
+        // Reset rapido
         document.getElementById('name').value = '';
         document.getElementById('qty').value = '';
         document.getElementById('unit').value = '';
+        document.getElementById('date').value = '';
+        document.getElementById('name').focus();
     }
 
+    // --- FUNZIONI LISTA SPESA ---
+    function deleteShoppingItem(id) {
+        shoppingList = shoppingList.filter(item => item.id !== id);
+        saveShoppingData();
+        render();
+    }
+
+    // Trasforma i pulsanti della card in un campo data
+    function askDateForBoughtItem(id) {
+        const item = shoppingList.find(i => i.id === id);
+        const labelTesto = item.location === 'frigo' ? 'Scade il:' : 'Congelato il:';
+        
+        document.getElementById(`action-${id}`).innerHTML = `
+            <div class="inline-date-picker">
+                <span style="font-size:0.8rem; font-weight:bold; color:#555;">${labelTesto}</span>
+                <input type="date" id="buy-date-${id}">
+                <button onclick="confirmPurchase(${id})">OK</button>
+                <button style="background:none; color:var(--danger);" onclick="render()">✖</button>
+            </div>
+        `;
+        // Imposta la data di oggi come predefinita
+        document.getElementById(`buy-date-${id}`).valueAsDate = new Date();
+    }
+
+    // Sposta l'alimento dalla spesa al frigo/freezer
+    function confirmPurchase(id) {
+        const dateVal = document.getElementById(`buy-date-${id}`).value;
+        if(!dateVal) return alert("Devi inserire una data!");
+        
+        const itemIndex = shoppingList.findIndex(i => i.id === id);
+        if(itemIndex > -1) {
+            const item = shoppingList[itemIndex];
+            item.date = dateVal; // Aggiunge la data scelta
+            
+            inventory.push(item); // Sposta in inventario
+            shoppingList.splice(itemIndex, 1); // Rimuove dalla spesa
+            
+            saveData();
+            saveShoppingData();
+            render();
+        }
+    }
+
+    // --- FUNZIONI FRIGO E FREEZER ---
     function deleteItem(id) {
         inventory = inventory.filter(item => item.id !== id);
         saveData();
@@ -214,52 +296,70 @@
         const item = inventory.find(i => i.id === id);
         if(item) {
             let numericQty = Number(item.qty);
-            if(isNaN(numericQty)) {
-                alert("Questo è un alimento col vecchio formato testuale. Eliminalo e riaggiungilo per usare questa funzione!");
-                return;
-            }
+            if(isNaN(numericQty)) return alert("Questo è un alimento col vecchio formato testuale. Eliminalo e riaggiungilo per usare questa funzione!");
             item.qty = numericQty + delta;
             
-            if(item.qty <= 0) {
-                deleteItem(id);
-            } else {
-                saveData();
-                render();
-            }
+            if(item.qty <= 0) deleteItem(id);
+            else { saveData(); render(); }
         }
     }
 
-    function saveData() {
-        localStorage.setItem('fridgeData', JSON.stringify(inventory));
-    }
+    // --- SALVATAGGI ---
+    function saveData() { localStorage.setItem('fridgeData', JSON.stringify(inventory)); }
+    function saveShoppingData() { localStorage.setItem('shoppingData', JSON.stringify(shoppingList)); }
 
     function checkDate(dateStr, location) {
-        // Il freezer non va mai "in rosso", ritorna solo lo stile base
         if(location === 'freezer') return 'card-date'; 
-        
-        const today = new Date();
-        today.setHours(0,0,0,0);
+        const today = new Date(); today.setHours(0,0,0,0);
         const itemDate = new Date(dateStr);
         const diffTime = itemDate - today;
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
         if(diffDays < 0) return 'card-date date-danger';
         if(diffDays <= 2) return 'card-date date-warning';
         return 'card-date';
     }
 
+    // --- MOTORE GRAFICO (RENDER) ---
     function render() {
         const frigoList = document.getElementById('frigo-list');
         const freezerList = document.getElementById('freezer-list');
+        const spesaList = document.getElementById('spesa-list');
         
         frigoList.innerHTML = '';
         freezerList.innerHTML = '';
+        spesaList.innerHTML = '';
 
         const searchTerm = document.getElementById('searchBar').value.toLowerCase();
         const sortBy = document.getElementById('sortBy').value;
 
-        let filteredInventory = inventory.filter(item => item.name.toLowerCase().includes(searchTerm));
+        // 1. Render Lista Spesa
+        let filteredSpesa = shoppingList.filter(item => item.name.toLowerCase().includes(searchTerm));
+        if(filteredSpesa.length === 0) spesaList.innerHTML = '<p style="text-align:center; color:#888; font-size:0.9rem;">Lista della spesa vuota! 🎉</p>';
+        
+        filteredSpesa.forEach(item => {
+            const unitText = item.unit ? ` ${item.unit}` : '';
+            const targetText = item.location === 'frigo' ? '➡️ Frigo' : '➡️ Freezer';
+            
+            spesaList.innerHTML += `
+                <div class="card">
+                    <div class="card-info">
+                        <div class="card-icon">${icons[item.category]}</div>
+                        <div class="card-details">
+                            <h4>${item.name}</h4>
+                            <span class="qty-text">${item.qty}${unitText}</span> 
+                            <span style="font-size:0.75rem; color:#888; margin-left:5px;">(${targetText})</span>
+                        </div>
+                    </div>
+                    <div class="card-meta" id="action-${item.id}">
+                        <button class="btn-check" title="Comprato!" onclick="askDateForBoughtItem(${item.id})">✔️</button>
+                        <button class="btn-delete" title="Elimina" onclick="deleteShoppingItem(${item.id})">✖</button>
+                    </div>
+                </div>
+            `;
+        });
 
+        // 2. Render Frigo/Freezer
+        let filteredInventory = inventory.filter(item => item.name.toLowerCase().includes(searchTerm));
         filteredInventory.sort((a, b) => {
             if (sortBy === 'name') return a.name.localeCompare(b.name);
             return new Date(a.date) - new Date(b.date);
@@ -268,8 +368,6 @@
         filteredInventory.forEach(item => {
             const dateClass = checkDate(item.date, item.location);
             const formattedDate = new Date(item.date).toLocaleDateString('it-IT');
-
-            // DIFFERENZIAZIONE TESTUALE TRA FRIGO E FREEZER SULLA CARD
             const dateLabelText = item.location === 'frigo' ? '⏳ Scade:' : '❄️ Congelato:';
 
             let qtyHTML = '';
@@ -307,8 +405,10 @@
         });
     }
 
+    // --- IMPORT / EXPORT (AGGIORNATO PER SUPPORTARE LA SPESA) ---
     function exportJSON() {
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(inventory));
+        const backupData = { inventory: inventory, shoppingList: shoppingList };
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData));
         const downloadAnchorNode = document.createElement('a');
         downloadAnchorNode.setAttribute("href", dataStr);
         downloadAnchorNode.setAttribute("download", "frigo_freezer_backup.json");
@@ -324,8 +424,20 @@
         reader.onload = function(e) {
             try {
                 const importedData = JSON.parse(e.target.result);
-                if(Array.isArray(importedData)) { inventory = importedData; saveData(); render(); alert("Dati importati con successo!"); } 
-                else { alert("Formato file non valido."); }
+                // Controllo compatibilità con vecchi backup (quando era solo un Array)
+                if(Array.isArray(importedData)) { 
+                    inventory = importedData; 
+                    shoppingList = [];
+                } else if (importedData.inventory) {
+                    inventory = importedData.inventory || [];
+                    shoppingList = importedData.shoppingList || [];
+                } else {
+                    return alert("Formato file non valido.");
+                }
+                saveData(); 
+                saveShoppingData();
+                render(); 
+                alert("Dati importati con successo!"); 
             } catch (err) { alert("Errore nella lettura del file JSON."); }
             event.target.value = '';
         };
