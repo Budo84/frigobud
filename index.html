@@ -119,6 +119,7 @@
         .inline-date-picker { display: flex; align-items: center; gap: 8px; background: var(--card-bg); padding: 10px; border-radius: 8px; border: 1px solid var(--input-border); width: 100%; flex-wrap: wrap; }
         .inline-date-picker select, .inline-date-picker input { flex: 1; min-width: 120px; padding: 8px; }
 
+        /* --- NUOVO: CSS POPUP SCADENZE --- */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 2000; animation: fadeIn 0.3s ease; padding: 20px; }
         .modal-overlay.active { display: flex; }
         .modal-content { background: var(--card-bg); padding: 25px; border-radius: 15px; width: 100%; max-width: 400px; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.3); text-align: center; }
@@ -350,7 +351,29 @@
             let selected = (key === selectedCat) ? 'selected' : '';
             options += `<option value="${key}" ${selected}>${value}</option>`;
         }
+        options += `<option value="add_new" style="font-weight:bold; color:var(--frigo-header);">➕ Crea Nuova Categoria...</option>`;
         return options;
+    }
+
+    // --- NUOVA FUNZIONE: Gestisce la creazione di categoria dai mini-menu ---
+    function handleDynamicCategoryChange(selectEl, loc) {
+        if(selectEl.value === 'add_new') {
+            const newCatName = prompt("Nome della nuova categoria (es. 🍷 Vini / 👶 Pappa Bimbi):");
+            if(newCatName && newCatName.trim() !== "") {
+                const catKey = 'custom_' + Date.now(); 
+                if(loc === 'dispensa') customCategories.dispensa[catKey] = newCatName.trim();
+                else customCategories.frigo[catKey] = newCatName.trim();
+                
+                localStorage.setItem('customCategories', JSON.stringify(customCategories));
+                updateFormCategories(); // Aggiorna anche il menu principale in background
+                
+                // Ricrea le opzioni e seleziona quella appena creata
+                selectEl.innerHTML = getCategoryOptionsHTML(loc, catKey);
+            } else {
+                // Se l'utente annulla, rimette le opzioni normali senza "add_new" selezionato
+                selectEl.innerHTML = getCategoryOptionsHTML(loc, '');
+            }
+        }
     }
 
     function checkNewCategory() {
@@ -667,7 +690,7 @@
                 <select id="buy-loc-${id}" onchange="document.getElementById('buy-cat-${id}').innerHTML = getCategoryOptionsHTML(this.value, '')">
                     ${locOptions}
                 </select>
-                <select id="buy-cat-${id}">${catOptions}</select>
+                <select id="buy-cat-${id}" onchange="handleDynamicCategoryChange(this, document.getElementById('buy-loc-${id}').value)">${catOptions}</select>
                 <input type="date" id="buy-date-${id}">
                 <button style="background:var(--success); color:white; border:none; border-radius:6px;" onclick="confirmPurchase(${id})">OK</button>
             </div>
@@ -677,14 +700,14 @@
     function confirmPurchase(id) {
         const dateVal = document.getElementById(`buy-date-${id}`).value || '';
         const locVal = document.getElementById(`buy-loc-${id}`).value;
-        const catVal = document.getElementById(`buy-cat-${id}`).value; // Recupera la categoria scelta
+        const catVal = document.getElementById(`buy-cat-${id}`).value; 
         const itemIndex = shoppingList.findIndex(i => i.id === id);
         
         if(itemIndex > -1) {
             const item = shoppingList[itemIndex];
             item.date = dateVal; 
             item.location = locVal;
-            item.category = catVal; // Assegna la categoria scelta
+            item.category = catVal; 
             
             learnPreference(item.name, locVal, item.category);
 
@@ -715,7 +738,7 @@
                 <select id="move-loc-${id}" onchange="document.getElementById('move-cat-${id}').innerHTML = getCategoryOptionsHTML(this.value, '')">
                     ${locOptions}
                 </select>
-                <select id="move-cat-${id}">${catOptions}</select>
+                <select id="move-cat-${id}" onchange="handleDynamicCategoryChange(this, document.getElementById('move-loc-${id}').value)">${catOptions}</select>
                 <input type="date" id="move-date-${id}" value="${item.date || ''}">
                 <button style="background:var(--success); color:white; border:none; border-radius:6px;" onclick="confirmMove(${id})">OK</button>
             </div>
@@ -725,7 +748,7 @@
     function confirmMove(id) {
         const dateVal = document.getElementById(`move-date-${id}`).value || '';
         const locVal = document.getElementById(`move-loc-${id}`).value;
-        const catVal = document.getElementById(`move-cat-${id}`).value; // Recupera la categoria
+        const catVal = document.getElementById(`move-cat-${id}`).value; 
         const itemIndex = inventory.findIndex(i => i.id === id);
         
         if(itemIndex > -1) {
@@ -740,7 +763,7 @@
             } else {
                 item.location = locVal; 
                 item.date = dateVal;
-                item.category = catVal; // Assegna categoria scelta
+                item.category = catVal; 
                 
                 inventory.push(item);
                 learnPreference(item.name, locVal, item.category);
