@@ -12,26 +12,24 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #f4f7f6;
-            --text-color: #333;
+            --bg-color: #f4f7f6; --text-color: #333;
             --frigo-color: #e8f5e9; --frigo-header: #4caf50;
             --freezer-color: #e3f2fd; --freezer-header: #2196f3;
             --dispensa-color: #fff3e0; --dispensa-header: #e67e22;
             --spesa-color: #f3e5f5; --spesa-header: #9b59b6;
             --card-bg: #ffffff;
             --danger: #ff5252; --warning: #ffb142; --success: #2ecc71; --info: #3498db;
-            --gf-color: #27ae60;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        
         body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-color); padding: 20px 20px 90px 20px; }
         header { text-align: center; margin-bottom: 20px; }
         header h1 { font-size: 1.8rem; color: #2c3e50; }
         .container { max-width: 1000px; margin: 0 auto; }
 
-        input, select, button { font-size: 16px; font-family: inherit; }
+        input, select, button, textarea { font-size: 16px; font-family: inherit; }
 
+        /* Navigazione Bottom */
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); display: flex; justify-content: space-around; z-index: 1000; padding-bottom: env(safe-area-inset-bottom); }
         .nav-item { flex: 1; text-align: center; padding: 12px 0; font-size: 0.85rem; font-weight: 600; color: #7f8c8d; cursor: pointer; transition: 0.2s; border-bottom: 3px solid transparent; }
         .nav-item.active { color: #2c3e50; border-bottom: 3px solid #2c3e50; background: #f8f9fa; }
@@ -41,15 +39,25 @@
         .view.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        .form-section { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; align-items: end; }
+        /* Form Globale & Switch Modalità */
+        .form-section { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        
+        .mode-switch { display: flex; background: #eee; border-radius: 8px; overflow: hidden; margin-bottom: 15px; }
+        .mode-btn { flex: 1; background: none; color: #555; border-radius: 0; box-shadow: none; padding: 10px; font-size: 0.9rem; }
+        .mode-btn.active { background: #2c3e50; color: white; }
+
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; align-items: end; }
         .form-group { display: flex; flex-direction: column; }
         .form-group label { font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: #555; }
-        .form-group input[type="text"], .form-group input[type="number"], .form-group input[type="date"], .form-group select { padding: 10px; border: 1px solid #ddd; border-radius: 8px; outline: none; transition: border-color 0.2s; }
-        .form-group input:focus, .form-group select:focus { border-color: var(--frigo-header); }
+        .form-group input, .form-group select, .form-group textarea { padding: 10px; border: 1px solid #ddd; border-radius: 8px; outline: none; transition: 0.2s; width: 100%; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--frigo-header); }
         
-        .checkbox-group { flex-direction: row; align-items: center; gap: 8px; background: #e8f8f5; padding: 10px; border-radius: 8px; border: 1px solid #a3e4d7; }
-        .checkbox-group input { width: 18px; height: 18px; cursor: pointer; }
-        .checkbox-group label { margin: 0; color: #117a65; cursor: pointer; font-size: 0.9rem; font-weight: 700; }
+        /* Stile Textarea Multipla e Microfono */
+        #bulk-group { grid-column: 1 / -1; display: none; }
+        #bulkText { resize: vertical; min-height: 80px; }
+        .mic-btn { background: #e74c3c; color: white; margin-top: 8px; width: 100%; }
+        .mic-btn.listening { background: #c0392b; animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
 
         .form-actions { display: flex; gap: 10px; grid-column: 1 / -1; justify-content: flex-end; margin-top: 10px; }
         button { padding: 12px 16px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
@@ -57,33 +65,29 @@
         .btn-add:hover { background: #1a252f; }
         .btn-spesa { background: var(--spesa-header); color: white; }
         
-        /* Modifica Controlli (Filtri) */
-        .controls-section { display: flex; gap: 10px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; }
-        .controls-section input[type="text"], .controls-section select { padding: 12px; border: 1px solid #ddd; border-radius: 8px; flex: 1; min-width: 140px; }
+        /* Controlli (Cerca / Ordina) */
+        .controls-section { display: flex; gap: 10px; margin-bottom: 20px; }
+        .controls-section input, .controls-section select { padding: 12px; border: 1px solid #ddd; border-radius: 8px; flex: 1; }
 
+        /* Aree Contenuti */
         .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .area { border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
         .area-header { padding: 15px; color: white; text-align: center; font-weight: 700; font-size: 1.1rem; }
         .area-content { padding: 15px; min-height: 100px; }
         
-        #spesa-area .area-header { background: var(--spesa-header); }
-        #spesa-area .area-content { background: var(--spesa-color); }
-        #frigo-area .area-header { background: var(--frigo-header); }
-        #frigo-area .area-content { background: var(--frigo-color); }
-        #freezer-area .area-header { background: var(--freezer-header); }
-        #freezer-area .area-content { background: var(--freezer-color); }
-        #dispensa-area .area-header { background: var(--dispensa-header); }
-        #dispensa-area .area-content { background: var(--dispensa-color); }
+        #spesa-area .area-header { background: var(--spesa-header); } #spesa-area .area-content { background: var(--spesa-color); }
+        #frigo-area .area-header { background: var(--frigo-header); } #frigo-area .area-content { background: var(--frigo-color); }
+        #freezer-area .area-header { background: var(--freezer-header); } #freezer-area .area-content { background: var(--freezer-color); }
+        #dispensa-area .area-header { background: var(--dispensa-header); } #dispensa-area .area-content { background: var(--dispensa-color); }
 
         .shelf-title { font-size: 1rem; color: #555; margin: 15px 0 10px 0; padding-bottom: 5px; border-bottom: 2px solid rgba(0,0,0,0.1); font-weight: 600; }
 
+        /* Card Alimenti */
         .card { background: var(--card-bg); padding: 15px; border-radius: 10px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); gap: 15px; }
         .card-info { display: flex; align-items: center; gap: 12px; flex: 1; }
         .card-icon { font-size: 1.8rem; }
-        .card-details h4 { margin: 0 0 5px 0; font-size: 1.05rem; line-height: 1.2; display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
+        .card-details h4 { margin: 0 0 5px 0; font-size: 1.05rem; line-height: 1.2; }
         
-        .badge-gf { background: var(--gf-color); color: white; font-size: 0.65rem; padding: 2px 6px; border-radius: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
-
         .qty-controls { display: flex; align-items: center; gap: 10px; }
         .btn-qty { padding: 0; width: 30px; height: 30px; border-radius: 6px; background: #f0f0f0; color: #333; font-size: 1.2rem; }
         .qty-text { font-size: 0.9rem; font-weight: 600; color: #444; }
@@ -94,9 +98,7 @@
         .date-warning { background: var(--warning); color: white; }
         
         .btn-action-icon { background: none; border: none; font-size: 1.4rem; cursor: pointer; padding: 5px; }
-        .c-delete { color: var(--danger); }
-        .c-check { color: var(--success); }
-        .c-move { color: var(--info); }
+        .c-delete { color: var(--danger); } .c-check { color: var(--success); } .c-move { color: var(--info); }
         
         .inline-date-picker { display: flex; align-items: center; gap: 8px; background: #f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #ddd; width: 100%; flex-wrap: wrap; }
         .inline-date-picker select, .inline-date-picker input { flex: 1; min-width: 120px; padding: 8px; }
@@ -104,10 +106,10 @@
 
         @media (max-width: 768px) {
             body { padding: 15px 15px 100px 15px; }
-            .form-section { grid-template-columns: 1fr; gap: 15px; }
+            .form-grid { grid-template-columns: 1fr; gap: 15px; }
             .form-actions { flex-direction: column; width: 100%; margin-top: 5px; }
             .form-actions button { width: 100%; }
-            .controls-section { flex-direction: column; align-items: stretch; }
+            .controls-section { flex-direction: column; }
             .dashboard-grid { grid-template-columns: 1fr; }
             .card { flex-direction: column; align-items: stretch; }
             .card-info { margin-bottom: 5px; }
@@ -134,60 +136,61 @@
 <body>
 
 <nav class="bottom-nav">
-    <div class="nav-item active" onclick="switchTab('frigo')">
-        <span class="nav-icon">❄️</span> Frigo
-    </div>
-    <div class="nav-item" onclick="switchTab('dispensa')">
-        <span class="nav-icon">🥫</span> Dispensa
-    </div>
-    <div class="nav-item" onclick="switchTab('spesa')">
-        <span class="nav-icon">🛒</span> Spesa
-    </div>
+    <div class="nav-item active" onclick="switchTab('frigo')"><span class="nav-icon">❄️</span> Frigo</div>
+    <div class="nav-item" onclick="switchTab('dispensa')"><span class="nav-icon">🥫</span> Dispensa</div>
+    <div class="nav-item" onclick="switchTab('spesa')"><span class="nav-icon">🛒</span> Spesa</div>
 </nav>
 
 <div class="container">
-    <header>
-        <h1>Gestione Casa</h1>
-    </header>
+    <header><h1>Gestione Casa</h1></header>
 
     <div class="form-section">
-        <div class="form-group">
-            <label>Alimento</label>
-            <input type="text" id="name" placeholder="es. Pollo, Pasta..." required>
-        </div>
-        <div class="form-group">
-            <label>Quantità</label>
-            <input type="number" id="qty" placeholder="es. 2" min="1" required>
-        </div>
-        <div class="form-group">
-            <label>Unità</label>
-            <input type="text" id="unit" placeholder="es. fette, kg, pz">
-        </div>
-        <div class="form-group">
-            <label>Destinazione</label>
-            <select id="location" onchange="updateFormCategories()">
-                <option value="frigo">Frigorifero</option>
-                <option value="freezer">Freezer</option>
-                <option value="dispensa">Dispensa</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label id="categoryLabel">Categoria</label>
-            <select id="category"></select>
-        </div>
-        <div class="form-group">
-            <label id="dateLabel">Data (Opzionale)</label>
-            <input type="date" id="date">
-        </div>
-        
-        <div class="form-group checkbox-group">
-            <input type="checkbox" id="glutenFree">
-            <label for="glutenFree">🌾 Senza Glutine (SG)</label>
+        <div class="mode-switch">
+            <button id="btn-single" class="mode-btn active" onclick="setMode('single')">✏️ Singolo</button>
+            <button id="btn-bulk" class="mode-btn" onclick="setMode('bulk')">📝 Multiplo / 🎙️ Vocale</button>
         </div>
 
-        <div class="form-actions">
-            <button class="btn-spesa" onclick="addItem('shopping')">🛒 in Spesa</button>
-            <button class="btn-add" onclick="addItem('inventory')">➕ Aggiungi</button>
+        <div class="form-grid">
+            <div class="form-group single-only">
+                <label>Alimento</label>
+                <input type="text" id="name" placeholder="es. Pollo">
+            </div>
+            <div class="form-group single-only">
+                <label>Quantità</label>
+                <input type="number" id="qty" placeholder="es. 2" value="1" min="1">
+            </div>
+            <div class="form-group single-only">
+                <label>Unità</label>
+                <input type="text" id="unit" placeholder="es. fette, kg">
+            </div>
+
+            <div class="form-group" id="bulk-group">
+                <label>Lista Alimenti (separati da virgola o a capo)</label>
+                <textarea id="bulkText" placeholder="Es:&#10;Pollo&#10;2 Latte&#10;Uova"></textarea>
+                <button class="mic-btn" id="mic-btn" onclick="startDictation()">🎙️ Avvia Dettatura</button>
+            </div>
+
+            <div class="form-group">
+                <label>Destinazione</label>
+                <select id="location" onchange="updateFormCategories()">
+                    <option value="frigo">Frigorifero</option>
+                    <option value="freezer">Freezer</option>
+                    <option value="dispensa">Dispensa</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label id="categoryLabel">Categoria / Ripiano</label>
+                <select id="category"></select>
+            </div>
+            <div class="form-group">
+                <label id="dateLabel">Data (Opzionale)</label>
+                <input type="date" id="date">
+            </div>
+
+            <div class="form-actions">
+                <button class="btn-spesa" onclick="processAdd('shopping')">🛒 in Spesa</button>
+                <button class="btn-add" onclick="processAdd('inventory')">➕ Aggiungi</button>
+            </div>
         </div>
     </div>
 
@@ -197,38 +200,19 @@
             <option value="date">⏱️ Ordina per Data</option>
             <option value="name">🔤 Ordina per Nome (A-Z)</option>
         </select>
-        <select id="filterGluten" onchange="render()">
-            <option value="all">🍽️ Tutti gli alimenti</option>
-            <option value="sg">🌾 Solo Senza Glutine</option>
-            <option value="cg">🍞 Solo Con Glutine</option>
-        </select>
     </div>
 
     <div id="view-frigo" class="view active">
         <div class="dashboard-grid">
-            <div class="area" id="frigo-area">
-                <div class="area-header">Il tuo Frigorifero</div>
-                <div class="area-content" id="frigo-list"></div>
-            </div>
-            <div class="area" id="freezer-area">
-                <div class="area-header">Il tuo Freezer</div>
-                <div class="area-content" id="freezer-list"></div>
-            </div>
+            <div class="area" id="frigo-area"><div class="area-header">Il tuo Frigorifero</div><div class="area-content" id="frigo-list"></div></div>
+            <div class="area" id="freezer-area"><div class="area-header">Il tuo Freezer</div><div class="area-content" id="freezer-list"></div></div>
         </div>
     </div>
-
     <div id="view-dispensa" class="view">
-        <div class="area" id="dispensa-area">
-            <div class="area-header">🥫 La tua Dispensa</div>
-            <div class="area-content" id="dispensa-list"></div>
-        </div>
+        <div class="area" id="dispensa-area"><div class="area-header">🥫 La tua Dispensa</div><div class="area-content" id="dispensa-list"></div></div>
     </div>
-
     <div id="view-spesa" class="view">
-        <div class="area" id="spesa-area">
-            <div class="area-header">🛒 Lista della Spesa</div>
-            <div class="area-content" id="spesa-list"></div>
-        </div>
+        <div class="area" id="spesa-area"><div class="area-header">🛒 Lista della Spesa</div><div class="area-content" id="spesa-list"></div></div>
     </div>
 
     <div class="tools-section">
@@ -243,6 +227,7 @@
 <script>
     let inventory = JSON.parse(localStorage.getItem('fridgeData')) || [];
     let shoppingList = JSON.parse(localStorage.getItem('shoppingData')) || [];
+    let inputMode = 'single'; // single o bulk
 
     const catFrigo = { 'carne': '🍗 Carne/Pesce', 'verdura': '🥦 Verdura/Frutta', 'latticini': '🧀 Latticini/Uova', 'pronti': '🍲 Pronti', 'altro_f': '📦 Altro' };
     const catDispensa = { 'pasta': '🍝 Pasta/Riso/Cereali', 'scatolette': '🥫 Scatolette/Conserve', 'condimenti': '🧂 Olio/Sale/Condimenti', 'colazione': '🍪 Biscotti/Colazione', 'bevande': '🧃 Bevande', 'altro_d': '📦 Altro' };
@@ -251,7 +236,6 @@
     function switchTab(tabId) {
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        
         document.getElementById(`view-${tabId}`).classList.add('active');
         event.currentTarget.classList.add('active');
         
@@ -270,45 +254,108 @@
         for (const [key, value] of Object.entries(targetDict)) {
             catSelect.innerHTML += `<option value="${key}">${value}</option>`;
         }
-
-        if(loc === 'frigo') dateLabel.innerText = 'Scadenza (Opz.)';
-        else if(loc === 'freezer') dateLabel.innerText = 'Congelato (Opz.)';
-        else dateLabel.innerText = 'Scadenza (Opz.)';
+        dateLabel.innerText = loc === 'frigo' ? 'Scadenza (Opz.)' : (loc === 'freezer' ? 'Congelato (Opz.)' : 'Scadenza (Opz.)');
     }
 
-    function addItem(target) {
-        const name = document.getElementById('name').value;
-        const qty = parseInt(document.getElementById('qty').value);
-        const unit = document.getElementById('unit').value.trim();
+    // --- GESTIONE MODALITA' (Singolo / Multiplo) ---
+    function setMode(mode) {
+        inputMode = mode;
+        document.getElementById('btn-single').classList.toggle('active', mode === 'single');
+        document.getElementById('btn-bulk').classList.toggle('active', mode === 'bulk');
+        
+        document.querySelectorAll('.single-only').forEach(el => el.style.display = mode === 'single' ? 'flex' : 'none');
+        document.getElementById('bulk-group').style.display = mode === 'bulk' ? 'flex' : 'none';
+    }
+
+    // --- DETTATURA VOCALE (Speech Recognition) ---
+    function startDictation() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            return alert("Il tuo browser non supporta la dettatura vocale. Usa Chrome o Safari aggiornati!");
+        }
+        
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'it-IT';
+        recognition.interimResults = false;
+        
+        const micBtn = document.getElementById('mic-btn');
+        micBtn.classList.add('listening');
+        micBtn.innerText = '🔴 In ascolto... Parla ora!';
+
+        recognition.onresult = function(event) {
+            const transcript = event.results[0][0].transcript;
+            const bulkBox = document.getElementById('bulkText');
+            // Aggiungiamo il testo trascritto, separato da virgola se c'era già qualcosa
+            bulkBox.value += (bulkBox.value ? ', ' : '') + transcript;
+        };
+
+        recognition.onerror = function(event) { alert("Errore microfono: " + event.error); };
+        
+        recognition.onend = function() {
+            micBtn.classList.remove('listening');
+            micBtn.innerText = '🎙️ Avvia Dettatura';
+        };
+
+        recognition.start();
+    }
+
+    // --- ELABORAZIONE INSERIMENTO ---
+    function processAdd(target) {
         const location = document.getElementById('location').value;
         const category = document.getElementById('category').value;
         const date = document.getElementById('date').value;
-        const isGlutenFree = document.getElementById('glutenFree').checked; 
 
-        if(!name || !qty) return alert("Compila almeno Nome e Quantità!");
+        if (inputMode === 'single') {
+            const name = document.getElementById('name').value.trim();
+            const qty = parseInt(document.getElementById('qty').value);
+            const unit = document.getElementById('unit').value.trim();
+            if(!name || isNaN(qty)) return alert("Compila Nome e Quantità!");
+            executeAdd(name, qty, unit, location, category, date, target);
+        } else {
+            // Modalità Multipla: Analizziamo il testo
+            const bulkText = document.getElementById('bulkText').value;
+            // Separiamo per "a capo" o "virgola" o la parola " e "
+            let lines = bulkText.replace(/ e /gi, ',').split(/[\n,]+/);
+            
+            let addedCount = 0;
+            lines.forEach(line => {
+                let text = line.trim();
+                if(!text) return;
+                
+                let qty = 1;
+                let itemName = text;
+                
+                // Cerca se la riga inizia o finisce con un numero (es "2 Latte" o "Latte 2")
+                const matchStart = text.match(/^(\d+)\s+(.+)$/);
+                const matchEnd = text.match(/^(.+)\s+(\d+)$/);
+                
+                if (matchStart) { qty = parseInt(matchStart[1]); itemName = matchStart[2]; }
+                else if (matchEnd) { qty = parseInt(matchEnd[2]); itemName = matchEnd[1]; }
 
-        const newItem = { 
-            id: Date.now(), 
-            name, 
-            qty, 
-            unit, 
-            location, 
-            category, 
-            date: date || '',
-            isGlutenFree: isGlutenFree 
-        };
-
-        if(target === 'inventory') { inventory.push(newItem); saveData(); } 
-        else { shoppingList.push(newItem); saveShoppingData(); }
+                // Capitalizza la prima lettera
+                itemName = itemName.charAt(0).toUpperCase() + itemName.slice(1);
+                
+                executeAdd(itemName, qty, "", location, category, date, target);
+                addedCount++;
+            });
+            
+            if(addedCount === 0) return alert("Inserisci almeno un alimento!");
+        }
         
-        render();
-        
+        // Reset campi
         document.getElementById('name').value = '';
-        document.getElementById('qty').value = '';
-        document.getElementById('glutenFree').checked = false; 
-        document.getElementById('name').focus();
+        document.getElementById('qty').value = '1';
+        document.getElementById('bulkText').value = '';
+        render();
     }
 
+    function executeAdd(name, qty, unit, location, category, date, target) {
+        const newItem = { id: Date.now() + Math.random(), name, qty, unit, location, category, date: date || '' };
+        if(target === 'inventory') { inventory.push(newItem); saveData(); } 
+        else { shoppingList.push(newItem); saveShoppingData(); }
+    }
+
+    // --- FUNZIONI CARTE E AZIONI (Uguali a prima) ---
     function deleteShoppingItem(id) { shoppingList = shoppingList.filter(item => item.id !== id); saveShoppingData(); render(); }
 
     function askDateForBoughtItem(id) {
@@ -329,18 +376,13 @@
     function confirmPurchase(id) {
         const dateVal = document.getElementById(`buy-date-${id}`).value;
         const locVal = document.getElementById(`buy-loc-${id}`).value;
-        
         const itemIndex = shoppingList.findIndex(i => i.id === id);
         if(itemIndex > -1) {
             const item = shoppingList[itemIndex];
-            item.date = dateVal;
-            item.location = locVal;
-            
+            item.date = dateVal; item.location = locVal;
             if (locVal === 'dispensa' && !catDispensa[item.category]) item.category = 'altro_d';
             if (locVal !== 'dispensa' && !catFrigo[item.category]) item.category = 'altro_f';
-
-            inventory.push(item);
-            shoppingList.splice(itemIndex, 1);
+            inventory.push(item); shoppingList.splice(itemIndex, 1);
             saveData(); saveShoppingData(); render();
         }
     }
@@ -364,8 +406,7 @@
         const locVal = document.getElementById(`move-loc-${id}`).value;
         const item = inventory.find(i => i.id === id);
         if(item) {
-            item.location = locVal;
-            item.date = dateVal;
+            item.location = locVal; item.date = dateVal;
             if (locVal === 'dispensa' && !catDispensa[item.category]) item.category = 'altro_d';
             if (locVal !== 'dispensa' && !catFrigo[item.category]) item.category = 'altro_f';
             saveData(); render();
@@ -378,10 +419,9 @@
         const item = inventory.find(i => i.id === id);
         if(item) {
             let numericQty = Number(item.qty);
-            if(isNaN(numericQty)) return alert("Elimina l'alimento e riaggiungilo per usare questa funzione!");
+            if(isNaN(numericQty)) return alert("Elimina e riaggiungi per usare questa funzione!");
             item.qty = numericQty + delta;
-            if(item.qty <= 0) deleteItem(id);
-            else { saveData(); render(); }
+            if(item.qty <= 0) deleteItem(id); else { saveData(); render(); }
         }
     }
 
@@ -391,8 +431,7 @@
     function checkDate(dateStr, location) {
         if(!dateStr || location === 'freezer' || location === 'dispensa') return 'card-date'; 
         const today = new Date(); today.setHours(0,0,0,0);
-        const itemDate = new Date(dateStr);
-        const diffDays = Math.ceil((itemDate - today) / (1000 * 60 * 60 * 24));
+        const diffDays = Math.ceil((new Date(dateStr) - today) / (1000 * 60 * 60 * 24));
         if(diffDays < 0) return 'card-date date-danger';
         if(diffDays <= 2) return 'card-date date-warning';
         return 'card-date';
@@ -415,35 +454,19 @@
             </div>`;
 
         let locTag = isSpesa ? `<span style="font-size:0.75rem; color:#888;">(➡️ ${item.location})</span>` : '';
-        let gfBadge = item.isGlutenFree ? `<span class="badge-gf" title="Senza Glutine">🌾 SG</span>` : '';
-
         let actionsHTML = isSpesa ? `
-            <div>
-                <button class="btn-action-icon c-check" onclick="askDateForBoughtItem(${item.id})">✔️</button>
-                <button class="btn-action-icon c-delete" onclick="deleteShoppingItem(${item.id})">✖</button>
-            </div>
+            <div><button class="btn-action-icon c-check" onclick="askDateForBoughtItem(${item.id})">✔️</button><button class="btn-action-icon c-delete" onclick="deleteShoppingItem(${item.id})">✖</button></div>
         ` : `
-            <div>
-                <button class="btn-action-icon c-move" onclick="askMoveItem(${item.id})">🔄</button>
-                <button class="btn-action-icon c-delete" onclick="deleteItem(${item.id})">✖</button>
-            </div>
+            <div><button class="btn-action-icon c-move" onclick="askMoveItem(${item.id})">🔄</button><button class="btn-action-icon c-delete" onclick="deleteItem(${item.id})">✖</button></div>
         `;
-
-        let actionId = isSpesa ? `action-${item.id}` : `inv-action-${item.id}`;
 
         return `
             <div class="card">
                 <div class="card-info">
                     <div class="card-icon">${icons[item.category] || '📦'}</div>
-                    <div class="card-details">
-                        <h4>${item.name} ${gfBadge} ${locTag}</h4>
-                        ${qtyHTML}
-                    </div>
+                    <div class="card-details"><h4>${item.name} ${locTag}</h4>${qtyHTML}</div>
                 </div>
-                <div class="card-meta" id="${actionId}">
-                    ${dateHTML}
-                    ${actionsHTML}
-                </div>
+                <div class="card-meta" id="${isSpesa ? `action-${item.id}` : `inv-action-${item.id}`}">${dateHTML}${actionsHTML}</div>
             </div>`;
     }
 
@@ -454,50 +477,28 @@
 
         const searchTerm = document.getElementById('searchBar').value.toLowerCase();
         const sortBy = document.getElementById('sortBy').value;
-        const filterGluten = document.getElementById('filterGluten').value; // Legge la scelta dal menu
 
-        // Nuova logica del filtro
-        const filterFn = item => {
-            const matchSearch = item.name.toLowerCase().includes(searchTerm);
-            let matchGF = true;
-            if (filterGluten === 'sg') {
-                matchGF = item.isGlutenFree === true;
-            } else if (filterGluten === 'cg') {
-                matchGF = !item.isGlutenFree; // Se è "falso" o indefinito, ha il glutine
-            }
-            return matchSearch && matchGF;
-        };
-
-        let filteredSpesa = shoppingList.filter(filterFn);
-        let filteredInv = inventory.filter(filterFn);
+        let filteredSpesa = shoppingList.filter(i => i.name.toLowerCase().includes(searchTerm));
+        let filteredInv = inventory.filter(i => i.name.toLowerCase().includes(searchTerm));
         
         const sortFn = (a, b) => (sortBy === 'name') ? a.name.localeCompare(b.name) : new Date(a.date||'2099') - new Date(b.date||'2099');
         filteredSpesa.sort(sortFn); filteredInv.sort(sortFn);
 
         filteredSpesa.forEach(item => lists.spesa += buildCardHTML(item, true));
-        
         filteredInv.forEach(item => {
-            if(item.location === 'frigo' || item.location === 'freezer') {
-                lists[item.location] += buildCardHTML(item, false);
-            } else if (item.location === 'dispensa') {
-                dispensaShelves[item.category] += buildCardHTML(item, false);
-            }
+            if(item.location === 'frigo' || item.location === 'freezer') lists[item.location] += buildCardHTML(item, false);
+            else if (item.location === 'dispensa') dispensaShelves[item.category] += buildCardHTML(item, false);
         });
 
-        // Testo se la ricerca è vuota
-        const emptyText = filterGluten !== 'all' ? '<p style="text-align:center; color:#888; font-size:0.9rem;">Nessun prodotto per questo filtro.</p>' : '';
-
-        document.getElementById('frigo-list').innerHTML = lists.frigo || emptyText;
-        document.getElementById('freezer-list').innerHTML = lists.freezer || emptyText;
-        document.getElementById('spesa-list').innerHTML = lists.spesa || '<p style="text-align:center; color:#888; font-size:0.9rem;">Niente da comprare! 🎉</p>';
+        document.getElementById('frigo-list').innerHTML = lists.frigo;
+        document.getElementById('freezer-list').innerHTML = lists.freezer;
+        document.getElementById('spesa-list').innerHTML = lists.spesa || '<p style="text-align:center; color:#888;">Niente da comprare! 🎉</p>';
         
         let dispensaHTML = '';
         for (const [key, name] of Object.entries(catDispensa)) {
-            if (dispensaShelves[key] !== '') {
-                dispensaHTML += `<div class="shelf-title">${name}</div>${dispensaShelves[key]}`;
-            }
+            if (dispensaShelves[key] !== '') dispensaHTML += `<div class="shelf-title">${name}</div>${dispensaShelves[key]}`;
         }
-        document.getElementById('dispensa-list').innerHTML = dispensaHTML || emptyText;
+        document.getElementById('dispensa-list').innerHTML = dispensaHTML || '<p style="text-align:center; color:#888;">Dispensa vuota!</p>';
     }
 
     function exportJSON() {
@@ -519,10 +520,7 @@
 
     updateFormCategories();
     render();
-
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js'); });
-    }
+    if ('serviceWorker' in navigator) { window.addEventListener('load', () => navigator.serviceWorker.register('sw.js')); }
 </script>
 
 </body>
