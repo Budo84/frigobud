@@ -23,7 +23,6 @@
             --nav-bg: #ffffff; --nav-text: #7f8c8d; --nav-active-bg: #f8f9fa;
         }
 
-        /* Tema Scuro */
         [data-theme="dark"] {
             --bg-color: #121212; --text-color: #e0e0e0;
             --card-bg: #1e1e1e;
@@ -44,7 +43,6 @@
 
         input, select, button, textarea { font-size: 16px; font-family: inherit; color: var(--text-color); }
 
-        /* Navigazione Bottom */
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--nav-bg); box-shadow: 0 -2px 10px rgba(0,0,0,0.2); display: flex; justify-content: space-around; z-index: 1000; padding-bottom: env(safe-area-inset-bottom); transition: background 0.3s; }
         .nav-item { flex: 1; text-align: center; padding: 12px 0; font-size: 0.85rem; font-weight: 600; color: var(--nav-text); cursor: pointer; transition: 0.2s; border-bottom: 3px solid transparent; }
         .nav-item.active { color: var(--text-color); border-bottom: 3px solid var(--text-color); background: var(--nav-active-bg); }
@@ -54,7 +52,6 @@
         .view.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Form */
         .form-section { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; transition: background 0.3s; }
         
         .mode-switch { display: flex; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; overflow: hidden; margin-bottom: 15px; }
@@ -71,6 +68,9 @@
         .mic-btn { background: #e74c3c; color: white; margin-top: 8px; width: 100%; }
         .mic-btn.listening { background: #c0392b; animation: pulse 1s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
+        
+        /* Avviso intelligenza inserimento multiplo */
+        .smart-hint { font-size: 0.75rem; color: #888; margin-top: 5px; font-style: italic; }
 
         .form-actions { display: flex; gap: 10px; grid-column: 1 / -1; justify-content: flex-end; margin-top: 10px; }
         button { padding: 12px 16px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
@@ -80,14 +80,12 @@
         .controls-section { display: flex; gap: 10px; margin-bottom: 20px; }
         .controls-section input, .controls-section select { padding: 12px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; flex: 1; color: var(--text-color); }
 
-        /* Aree Contenuti */
         .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .area { border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
         .area-header { padding: 15px; color: white; text-align: center; font-weight: 700; font-size: 1.1rem; display: flex; justify-content: space-between; align-items: center; }
         .area-content { padding: 15px; min-height: 100px; transition: background 0.3s; }
         
         .btn-recipe { background: white; color: var(--frigo-header); padding: 5px 10px; border-radius: 6px; font-size: 0.8rem; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-        .btn-recipe:hover { background: #f0f0f0; }
 
         #spesa-area .area-header { background: var(--spesa-header); justify-content: center;} 
         #spesa-area .area-content { background: var(--spesa-color); }
@@ -100,11 +98,11 @@
 
         .shelf-title { font-size: 1rem; color: var(--text-color); opacity: 0.8; margin: 15px 0 10px 0; padding-bottom: 5px; border-bottom: 2px solid var(--input-border); font-weight: 600; }
 
-        /* Card Alimenti */
         .card { background: var(--card-bg); padding: 15px; border-radius: 10px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); gap: 15px; transition: background 0.3s; }
         .card-info { display: flex; align-items: center; gap: 12px; flex: 1; }
         .card-icon { font-size: 1.8rem; }
         .card-details h4 { margin: 0 0 5px 0; font-size: 1.05rem; line-height: 1.2; }
+        .tag-sg { color: #e67e22; font-weight: bold; font-size: 0.85rem; }
         
         .qty-controls { display: flex; align-items: center; gap: 10px; }
         .btn-qty { padding: 0; width: 30px; height: 30px; border-radius: 6px; background: var(--input-bg); border: 1px solid var(--input-border); color: var(--text-color); font-size: 1.2rem; }
@@ -172,7 +170,7 @@
 
         <div class="form-grid">
             <div class="form-group single-only">
-                <label>Alimento</label>
+                <label>Alimento (Aggiungi "senza glutine" se serve)</label>
                 <input type="text" id="name" placeholder="es. Pollo">
             </div>
             <div class="form-group single-only">
@@ -185,20 +183,21 @@
             </div>
 
             <div class="form-group" id="bulk-group">
-                <label>Lista Alimenti (separati da virgola o a capo)</label>
-                <textarea id="bulkText" placeholder="Es:&#10;Pollo&#10;2 Latte&#10;Uova"></textarea>
+                <label>Dettatura Libera (Es: "Tre mele, pasta senza glutine")</label>
+                <textarea id="bulkText" placeholder="Incolla una lista o detta..."></textarea>
+                <p class="smart-hint">💡 L'app capisce da sola numeri, quantità, senza glutine e la categoria!</p>
                 <button class="mic-btn" id="mic-btn" onclick="startDictation()">🎙️ Avvia Dettatura</button>
             </div>
 
             <div class="form-group">
-                <label>Destinazione</label>
+                <label>Destinazione (Base)</label>
                 <select id="location" onchange="updateFormCategories()">
                     <option value="frigo">Frigorifero</option>
                     <option value="freezer">Freezer</option>
                     <option value="dispensa">Dispensa</option>
                 </select>
             </div>
-            <div class="form-group">
+            <div class="form-group single-only">
                 <label id="categoryLabel">Categoria / Ripiano</label>
                 <select id="category"></select>
             </div>
@@ -225,10 +224,7 @@
     <div id="view-frigo" class="view active">
         <div class="dashboard-grid">
             <div class="area" id="frigo-area">
-                <div class="area-header">
-                    <span>Il tuo Frigorifero</span>
-                    <button class="btn-recipe" onclick="cercaRicetteSvuotaFrigo()">👨‍🍳 Ricette</button>
-                </div>
+                <div class="area-header"><span>Il tuo Frigorifero</span><button class="btn-recipe" onclick="cercaRicetteSvuotaFrigo()">👨‍🍳 Ricette</button></div>
                 <div class="area-content" id="frigo-list"></div>
             </div>
             <div class="area" id="freezer-area">
@@ -262,7 +258,19 @@
     const catDispensa = { 'pasta': '🍝 Pasta/Riso/Cereali', 'scatolette': '🥫 Scatolette/Conserve', 'condimenti': '🧂 Olio/Sale/Condimenti', 'colazione': '🍪 Biscotti/Colazione', 'bevande': '🧃 Bevande', 'altro_d': '📦 Altro' };
     const icons = { 'carne': '🍗', 'verdura': '🥦', 'latticini': '🧀', 'pronti': '🍲', 'altro_f': '📦', 'pasta': '🍝', 'scatolette': '🥫', 'condimenti': '🧂', 'colazione': '🍪', 'bevande': '🧃', 'altro_d': '📦' };
 
-    // --- TEMA SCURO ---
+    // --- DIZIONARI PER IL CERVELLO ANALITICO ---
+    const numberWords = { 'un':1, 'uno':1, 'una':1, 'due':2, 'tre':3, 'quattro':4, 'cinque':5, 'sei':6, 'sette':7, 'otto':8, 'nove':9, 'dieci':10 };
+    const smartCategories = {
+        'pollo':'carne', 'carne':'carne', 'pesce':'carne', 'tonno':'scatolette', 'salmone':'carne', 'hamburger':'carne',
+        'pasta':'pasta', 'riso':'pasta', 'pane':'pasta', 'farina':'pasta', 'piadina':'pasta',
+        'mela':'verdura', 'mele':'verdura', 'zucchine':'verdura', 'insalata':'verdura', 'pomodori':'verdura', 'frutta':'verdura', 'verdura':'verdura', 'patate':'verdura',
+        'latte':'latticini', 'formaggio':'latticini', 'uova':'latticini', 'burro':'latticini', 'yogurt':'latticini', 'mozzarella':'latticini',
+        'biscotti':'colazione', 'cereali':'colazione', 'cornetti':'colazione', 'caffè':'colazione', 'marmellata':'colazione', 'fette biscottate':'colazione',
+        'acqua':'bevande', 'vino':'bevande', 'birra':'bevande', 'succo':'bevande', 'cola':'bevande',
+        'olio':'condimenti', 'sale':'condimenti', 'zucchero':'condimenti', 'aceto':'condimenti', 'pepe':'condimenti'
+    };
+
+
     function toggleTheme() {
         const html = document.documentElement;
         const currentTheme = html.getAttribute('data-theme');
@@ -272,12 +280,10 @@
         document.getElementById('meta-theme-color').setAttribute("content", newTheme === 'light' ? '#4caf50' : '#121212');
         localStorage.setItem('appTheme', newTheme);
     }
-    // Carica preferenza tema all'avvio
     const savedTheme = localStorage.getItem('appTheme') || 'light';
     document.documentElement.setAttribute('data-theme', savedTheme);
     document.getElementById('theme-icon').innerText = savedTheme === 'light' ? '🌙' : '☀️';
     document.getElementById('meta-theme-color').setAttribute("content", savedTheme === 'light' ? '#4caf50' : '#121212');
-
 
     function switchTab(tabId) {
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -333,31 +339,91 @@
         recognition.start();
     }
 
+    // --- IL CERVELLO ANALITICO ---
+    function parseSmartItem(rawText) {
+        let text = rawText.trim().toLowerCase();
+        let isGF = false;
+
+        // 1. Controlla Senza Glutine
+        if (text.includes('senza glutine') || text.includes('gluten free')) {
+            isGF = true;
+            text = text.replace('senza glutine', '').replace('gluten free', '').trim();
+        }
+
+        // 2. Converte i numeri a parole in cifre (es. "due" -> "2")
+        let words = text.split(/\s+/);
+        if (words.length > 0 && numberWords[words[0]]) {
+            words[0] = numberWords[words[0]];
+            text = words.join(' ');
+        }
+
+        // 3. Estrae Quantità e Unità
+        let qty = 1; let unit = ''; let name = text;
+        
+        // Cerca pattern: "2 pacchi di pasta" o "2 fette carne"
+        const matchStart = text.match(/^(\d+)\s*(kg|g|litri|l|ml|pacchi|pacco|scatole|scatola|bottiglie|bottiglia|fette|fetta|confezioni|confezione|pz)?\s*(?:di\s+)?(.+)$/i);
+        if (matchStart) {
+            qty = parseInt(matchStart[1]);
+            unit = matchStart[2] || '';
+            name = matchStart[3];
+        } else {
+            // Cerca pattern inverso: "pasta 2"
+            const matchEnd = text.match(/^(.+)\s+(\d+)$/i);
+            if(matchEnd) {
+                name = matchEnd[1];
+                qty = parseInt(matchEnd[2]);
+            }
+        }
+
+        // 4. Categorizzazione Intelligente
+        let finalCategory = document.getElementById('category').value; 
+        let finalLocation = document.getElementById('location').value;
+
+        for (const [key, cat] of Object.entries(smartCategories)) {
+            if (name.includes(key)) {
+                finalCategory = cat;
+                // Auto-assegna la destinazione corretta se ha senso
+                if (['pasta', 'scatolette', 'condimenti', 'colazione', 'bevande'].includes(cat)) finalLocation = 'dispensa';
+                if (['carne', 'verdura', 'latticini'].includes(cat)) finalLocation = 'frigo';
+                break;
+            }
+        }
+
+        // 5. Formattazione finale (Maiuscola e Tag)
+        name = name.charAt(0).toUpperCase() + name.slice(1);
+        if (isGF) name += ' <span class="tag-sg">🌾(SG)</span>';
+
+        return { name, qty, unit, category: finalCategory, location: finalLocation };
+    }
+
+
     function processAdd(target) {
-        const location = document.getElementById('location').value;
-        const category = document.getElementById('category').value;
-        const date = document.getElementById('date').value;
+        const baseLocation = document.getElementById('location').value;
+        const baseDate = document.getElementById('date').value;
 
         if (inputMode === 'single') {
-            const name = document.getElementById('name').value.trim();
+            const rawName = document.getElementById('name').value.trim();
             const qty = parseInt(document.getElementById('qty').value);
             const unit = document.getElementById('unit').value.trim();
-            if(!name || isNaN(qty)) return alert("Compila Nome e Quantità!");
-            executeAdd(name, qty, unit, location, category, date, target);
+            const category = document.getElementById('category').value;
+            if(!rawName || isNaN(qty)) return alert("Compila Nome e Quantità!");
+            
+            // Applica il controllo senza glutine anche in modalità singola!
+            let finalName = rawName;
+            if(finalName.toLowerCase().includes('senza glutine')) {
+                finalName = finalName.replace(/senza glutine/gi, '').trim() + ' <span class="tag-sg">🌾(SG)</span>';
+            }
+            
+            executeAdd(finalName, qty, unit, baseLocation, category, baseDate, target);
         } else {
             const bulkText = document.getElementById('bulkText').value;
             let lines = bulkText.replace(/ e /gi, ',').split(/[\n,]+/);
             let addedCount = 0;
+            
             lines.forEach(line => {
-                let text = line.trim();
-                if(!text) return;
-                let qty = 1; let itemName = text;
-                const matchStart = text.match(/^(\d+)\s+(.+)$/);
-                const matchEnd = text.match(/^(.+)\s+(\d+)$/);
-                if (matchStart) { qty = parseInt(matchStart[1]); itemName = matchStart[2]; }
-                else if (matchEnd) { qty = parseInt(matchEnd[2]); itemName = matchEnd[1]; }
-                itemName = itemName.charAt(0).toUpperCase() + itemName.slice(1);
-                executeAdd(itemName, qty, "", location, category, date, target);
+                if(!line.trim()) return;
+                const parsed = parseSmartItem(line); // Usa il Cervello Analitico
+                executeAdd(parsed.name, parsed.qty, parsed.unit, parsed.location, parsed.category, baseDate, target);
                 addedCount++;
             });
             if(addedCount === 0) return alert("Inserisci almeno un alimento!");
@@ -374,26 +440,19 @@
         else { shoppingList.push(newItem); saveShoppingData(); }
     }
 
-    // --- RICETTE SVUOTA FRIGO ---
     function cercaRicetteSvuotaFrigo() {
         const today = new Date(); today.setHours(0,0,0,0);
         const inScadenza = inventory.filter(item => {
             if(item.location !== 'frigo' || !item.date) return false;
             const diffDays = Math.ceil((new Date(item.date) - today) / (1000 * 60 * 60 * 24));
-            return diffDays <= 2; // Scaduti (<0) o in scadenza vicina (0-2 gg)
+            return diffDays <= 2; 
         });
 
-        if(inScadenza.length === 0) {
-            alert("Ottima notizia! Non hai alimenti in scadenza urgente nel frigo. 🎉");
-            return;
-        }
-
-        const ingredienti = inScadenza.map(i => i.name).join(' e ');
-        const url = `https://www.google.com/search?q=ricette+con+${encodeURIComponent(ingredienti)}`;
-        window.open(url, '_blank'); // Apre Google in una nuova scheda
+        if(inScadenza.length === 0) return alert("Ottima notizia! Non hai alimenti in scadenza urgente nel frigo. 🎉");
+        const ingredienti = inScadenza.map(i => i.name.replace(/<[^>]*>?/gm, '')).join(' e '); // Rimuove tag HTML dal nome per la ricerca
+        window.open(`https://www.google.com/search?q=ricette+con+${encodeURIComponent(ingredienti)}`, '_blank'); 
     }
 
-    // --- CICLO AUTO-SPESA ---
     function changeQty(id, delta) {
         const item = inventory.find(i => i.id === id);
         if(item) {
@@ -402,11 +461,11 @@
             item.qty = numericQty + delta;
             
             if(item.qty <= 0) {
-                if(confirm(`Hai finito ${item.name}! Vuoi aggiungerlo alla Lista della Spesa?`)) {
-                    // Sposta in spesa
+                // Rimuove eventuali tag HTML dal nome per l'alert
+                const cleanName = item.name.replace(/<[^>]*>?/gm, ''); 
+                if(confirm(`Hai finito: ${cleanName}!\nVuoi aggiungerlo alla Lista della Spesa?`)) {
                     inventory = inventory.filter(i => i.id !== id);
-                    item.qty = 1; // Resetta quantità per la spesa
-                    item.date = ''; // Rimuove la vecchia scadenza
+                    item.qty = 1; item.date = ''; 
                     shoppingList.push(item);
                     saveData(); saveShoppingData(); render();
                 } else {
@@ -420,7 +479,6 @@
 
 
     function deleteShoppingItem(id) { shoppingList = shoppingList.filter(item => item.id !== id); saveShoppingData(); render(); }
-
     function askDateForBoughtItem(id) {
         const item = shoppingList.find(i => i.id === id);
         document.getElementById(`action-${id}`).innerHTML = `
@@ -435,7 +493,6 @@
             </div>
         `;
     }
-
     function confirmPurchase(id) {
         const dateVal = document.getElementById(`buy-date-${id}`).value;
         const locVal = document.getElementById(`buy-loc-${id}`).value;
@@ -453,17 +510,12 @@
     function askMoveItem(id) {
         document.getElementById(`inv-action-${id}`).innerHTML = `
             <div class="inline-date-picker">
-                <select id="move-loc-${id}">
-                    <option value="frigo">Frigo</option>
-                    <option value="freezer">Freezer</option>
-                    <option value="dispensa">Dispensa</option>
-                </select>
+                <select id="move-loc-${id}"><option value="frigo">Frigo</option><option value="freezer">Freezer</option><option value="dispensa">Dispensa</option></select>
                 <input type="date" id="move-date-${id}">
                 <button style="background:var(--success); color:white; border:none; border-radius:6px;" onclick="confirmMove(${id})">OK</button>
             </div>
         `;
     }
-
     function confirmMove(id) {
         const dateVal = document.getElementById(`move-date-${id}`).value;
         const locVal = document.getElementById(`move-loc-${id}`).value;
@@ -477,7 +529,6 @@
     }
 
     function deleteItem(id) { inventory = inventory.filter(item => item.id !== id); saveData(); render(); }
-
     function saveData() { localStorage.setItem('fridgeData', JSON.stringify(inventory)); }
     function saveShoppingData() { localStorage.setItem('shoppingData', JSON.stringify(shoppingList)); }
 
