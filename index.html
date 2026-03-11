@@ -306,7 +306,7 @@
         const catSelect = document.getElementById('category');
         const dateLabel = document.getElementById('dateLabel');
         
-        // 1. Aggiungiamo l'opzione "Automatica" sempre in cima!
+        // FISSO: Assegna in automatico sempre come prima scelta!
         catSelect.innerHTML = '<option value="auto" style="font-weight:bold; color:var(--info);">🤖 Assegna in automatico</option>';
         
         let targetDict = (loc === 'dispensa') ? {...catDispensa, ...customCategories.dispensa} : {...catFrigo, ...customCategories.frigo};
@@ -337,13 +337,17 @@
         }
     }
 
+    // FIX EMOJI: Estrae un'emoji o il primo carattere utile in modo sicuro
     function getIconForCategory(catId) {
         if (icons[catId]) return icons[catId];
         
         let customName = customCategories.dispensa[catId] || customCategories.frigo[catId];
         if (customName) {
-            const match = customName.match(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/u);
-            if (match) return match[0];
+            let firstChar = Array.from(customName.trim())[0];
+            // Se non è una lettera/numero normale, presumiamo sia un'emoji o simbolo
+            if (!/^[a-zA-Z0-9]$/.test(firstChar)) {
+                return firstChar;
+            }
         }
         return '📦'; 
     }
@@ -379,7 +383,7 @@
     }
 
     function learnPreference(name, loc, cat) {
-        if(!name) return;
+        if(!name || cat === 'auto') return; // Non impara mail la parola 'auto'
         let cleanName = name.replace(/<[^>]*>?/gm, '').replace(/🌾/g, '').replace(/\(SG\)/gi, '').trim().toLowerCase();
         if(cleanName.length < 3) return; 
         
@@ -405,27 +409,25 @@
         let qty = 1; let unit = ''; let name = text;
         const matchStart = text.match(/^(\d+)\s*(kg|g|litri|l|ml|pacchi|pacco|scatole|scatola|bottiglie|bottiglia|fette|fetta|confezioni|confezione|pz)?\s*(?:di\s+)?(.+)$/i);
         if (matchStart) {
-            qty = parseInt(matchStart[1]);
-            unit = matchStart[2] || '';
-            name = matchStart[3];
+            qty = parseInt(matchStart[1]); unit = matchStart[2] || ''; name = matchStart[3];
         } else {
             const matchEnd = text.match(/^(.+)\s+(\d+)$/i);
-            if(matchEnd) {
-                name = matchEnd[1];
-                qty = parseInt(matchEnd[2]);
-            }
+            if(matchEnd) { name = matchEnd[1]; qty = parseInt(matchEnd[2]); }
         }
 
-        let finalCategory = document.getElementById('category').value; 
         let finalLocation = defaultLoc || document.getElementById('location').value;
+        let finalCategory = 'auto';
         let memoryFound = false;
 
-        if (userMemory[name]) {
-            finalLocation = userMemory[name].location;
-            finalCategory = userMemory[name].category;
+        // Puliamo il nome per interrogare la memoria in modo preciso
+        let cleanNameForMemory = name.replace(/<[^>]*>?/gm, '').replace(/🌾/g, '').replace(/\(SG\)/gi, '').trim().toLowerCase();
+
+        if (userMemory[cleanNameForMemory]) {
+            finalLocation = userMemory[cleanNameForMemory].location;
+            finalCategory = userMemory[cleanNameForMemory].category;
             memoryFound = true;
         } else {
-            let nameWords = name.split(/\s+/).sort((a,b) => b.length - a.length);
+            let nameWords = cleanNameForMemory.split(/\s+/).sort((a,b) => b.length - a.length);
             for(let w of nameWords) {
                 if (w.length >= 3 && userMemory[w]) {
                     finalLocation = userMemory[w].location;
@@ -436,7 +438,7 @@
             }
             if (!memoryFound) {
                 for (const [key, mem] of Object.entries(userMemory)) {
-                    if (key.length > 3 && name.includes(key)) {
+                    if (key.length > 3 && cleanNameForMemory.includes(key)) {
                         finalLocation = mem.location;
                         finalCategory = mem.category;
                         memoryFound = true;
@@ -448,7 +450,7 @@
 
         if (!memoryFound) {
             for (const [key, cat] of Object.entries(smartCategories)) {
-                if (name.includes(key)) {
+                if (cleanNameForMemory.includes(key)) {
                     finalCategory = cat;
                     if (['pasta', 'scatolette', 'condimenti', 'colazione', 'bevande'].includes(cat)) finalLocation = 'dispensa';
                     if (['carne', 'verdura', 'latticini', 'pronti'].includes(cat)) finalLocation = 'frigo';
@@ -456,7 +458,7 @@
                 }
             }
             for (const word of freezerKeywords) {
-                if (name.includes(word)) {
+                if (cleanNameForMemory.includes(word)) {
                     finalLocation = 'freezer';
                     if(!['carne', 'verdura'].includes(finalCategory)) finalCategory = 'pronti';
                     break;
@@ -464,8 +466,8 @@
             }
         }
 
-        // Se dopo tutti i tentativi la categoria è rimasta su 'auto', assegnamo un fallback generico
-        if (finalCategory === 'auto') {
+        // Se dopo tutti i tentativi non troviamo nulla, inseriamo in Altro
+        if (finalCategory === 'auto' || finalCategory === 'add_new') {
             finalCategory = (finalLocation === 'dispensa') ? 'altro_d' : 'altro_f';
         }
 
@@ -475,15 +477,14 @@
         return { name, qty, unit, category: finalCategory, location: finalLocation };
     }
 
-    // --- NUOVO: SISTEMA ANTI-DOPPIONI CENTRALE ---
+    // --- FIX DOPPIONI: Controllo super-severo che ignora tag HTML e spazi doppi ---
     function findDuplicate(list, searchName, searchLoc, searchDate, searchUnit) {
-        // Pulisce il nome da tag HTML e spazi per renderlo universale
-        let cleanName = searchName.trim().toLowerCase().replace(/\s+/g, ' ');
+        let cleanName = searchName.replace(/<[^>]*>?/gm, '').trim().toLowerCase().replace(/\s+/g, ' ');
         let cleanDate = (searchDate || '').trim();
         let cleanUnit = (searchUnit || '').trim().toLowerCase();
 
         return list.find(i => 
-            i.name.trim().toLowerCase().replace(/\s+/g, ' ') === cleanName &&
+            i.name.replace(/<[^>]*>?/gm, '').trim().toLowerCase().replace(/\s+/g, ' ') === cleanName &&
             i.location === searchLoc &&
             (i.date || '').trim() === cleanDate &&
             (i.unit || '').trim().toLowerCase() === cleanUnit
@@ -506,17 +507,18 @@
             let finalName = rawName;
             let finalLocation = baseLocation;
 
-            // Se l'utente ha lasciato la categoria in "Auto", ci pensa il cervello analitico!
+            // Se l'utente non sceglie la categoria ("Assegna in automatico"), la pensa l'AI
             if (category === 'auto') {
                 let textForParser = rawName;
-                if(isGFChecked && !textForParser.toLowerCase().includes('senza glutine')) textForParser += ' senza glutine';
-                
+                if(isGFChecked && !textForParser.toLowerCase().includes('senza glutine') && !textForParser.toLowerCase().includes('gluten free')) {
+                    textForParser += ' senza glutine';
+                }
+
                 const parsed = parseSmartItem(textForParser, baseLocation);
-                finalName = parsed.name;
+                finalName = parsed.name; 
                 category = parsed.category;
-                finalLocation = parsed.location; // Il cervello sposta anche l'alimento se serve!
+                finalLocation = parsed.location; 
             } else {
-                // Altrimenti formatta semplicemente il nome in modo corretto
                 finalName = finalName.charAt(0).toUpperCase() + finalName.slice(1);
                 if(isGFChecked || finalName.toLowerCase().includes('senza glutine') || finalName.toLowerCase().includes('gluten free')) {
                     finalName = finalName.replace(/senza glutine/gi, '').replace(/gluten free/gi, '').trim() + ' <span class="tag-sg">🌾(SG)</span>';
@@ -538,10 +540,8 @@
             if(addedCount === 0) return alert("Inserisci almeno un alimento!");
         }
         
-        document.getElementById('name').value = '';
-        document.getElementById('qty').value = '1';
-        document.getElementById('unit').value = '';
-        document.getElementById('bulkText').value = '';
+        document.getElementById('name').value = ''; document.getElementById('qty').value = '1';
+        document.getElementById('unit').value = ''; document.getElementById('bulkText').value = '';
         document.getElementById('isGlutenFree').checked = false; 
         render();
     }
@@ -550,14 +550,12 @@
         learnPreference(name, location, category);
         let targetList = target === 'inventory' ? inventory : shoppingList;
         
-        // Verifica se esiste già un doppione esatto
+        // Verifica con la nuova funzione super-severa se esiste un doppione esatto
         let existingItem = findDuplicate(targetList, name, location, date, unit);
 
         if (existingItem) {
-            // Se esiste, somma le quantità invece di creare una nuova riga!
             existingItem.qty = Number(existingItem.qty) + Number(qty);
         } else {
-            // Altrimenti crea l'oggetto nuovo
             const newItem = { id: Date.now() + Math.random(), name, qty: Number(qty), unit: (unit||'').trim(), location, category, date: (date||'').trim() };
             targetList.push(newItem);
         }
@@ -573,11 +571,9 @@
             let newName = prompt("Modifica il nome del prodotto:", cleanNameForPrompt);
             
             if(newName && newName.trim() !== "") {
-                if(item.name.includes('(SG)')) {
-                    item.name = newName.trim() + ' <span class="tag-sg">🌾(SG)</span>';
-                } else {
-                    item.name = newName.trim();
-                }
+                if(item.name.includes('(SG)')) item.name = newName.trim() + ' <span class="tag-sg">🌾(SG)</span>';
+                else item.name = newName.trim();
+                
                 learnPreference(item.name, item.location, item.category);
                 saveData(); saveShoppingData(); render();
             }
@@ -609,7 +605,7 @@
                 if(confirm(`Hai finito: ${cleanName}!\nVuoi aggiungerlo alla Lista della Spesa?`)) {
                     inventory = inventory.filter(i => i.id !== id);
                     
-                    // Controlla se è già in lista spesa per evitare doppioni
+                    // Anti-doppioni anche quando si rimanda un elemento nella spesa
                     let existingSpesa = findDuplicate(shoppingList, item.name, item.location, '', item.unit);
                     if (existingSpesa) {
                         existingSpesa.qty = Number(existingSpesa.qty) + 1;
@@ -660,7 +656,7 @@
             
             learnPreference(item.name, locVal, item.category);
 
-            // Verifica se esiste già per non creare doppioni in frigo/dispensa
+            // Anti-doppioni al momento dell'acquisto
             let existingItem = findDuplicate(inventory, item.name, locVal, dateVal, item.unit);
             if (existingItem) {
                 existingItem.qty = Number(existingItem.qty) + Number(item.qty);
@@ -688,20 +684,17 @@
         const dateVal = document.getElementById(`move-date-${id}`).value || '';
         const locVal = document.getElementById(`move-loc-${id}`).value;
         const itemIndex = inventory.findIndex(i => i.id === id);
+        
         if(itemIndex > -1) {
             const item = inventory[itemIndex];
-            
-            // Lo tolgo temporaneamente per cercare eventuali doppioni nella nuova posizione
-            inventory.splice(itemIndex, 1);
+            inventory.splice(itemIndex, 1); // Rimuove temporaneamente prima di spostare
             
             let existingItem = findDuplicate(inventory, item.name, locVal, dateVal, item.unit);
             
             if (existingItem) {
-                // Si fonde con l'alimento già presente
                 existingItem.qty = Number(existingItem.qty) + Number(item.qty);
                 learnPreference(item.name, locVal, existingItem.category);
             } else {
-                // Lo rimette come nuovo nella nuova posizione
                 item.location = locVal; item.date = dateVal;
                 const allDispensa = {...catDispensa, ...customCategories.dispensa};
                 const allFrigo = {...catFrigo, ...customCategories.frigo};
