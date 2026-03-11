@@ -61,7 +61,7 @@
         .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; align-items: end; }
         .form-group { display: flex; flex-direction: column; }
         .form-group label { font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; opacity: 0.8; }
-        .form-group input, .form-group select, .form-group textarea { padding: 10px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; outline: none; transition: 0.2s; width: 100%; }
+        .form-group input[type="text"], .form-group input[type="number"], .form-group input[type="date"], .form-group select, .form-group textarea { padding: 10px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; outline: none; transition: 0.2s; width: 100%; }
         
         #bulk-group { grid-column: 1 / -1; display: none; }
         #bulkText { resize: vertical; min-height: 80px; }
@@ -69,7 +69,6 @@
         .mic-btn.listening { background: #c0392b; animation: pulse 1s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
         
-        /* Avviso intelligenza inserimento multiplo */
         .smart-hint { font-size: 0.75rem; color: #888; margin-top: 5px; font-style: italic; }
 
         .form-actions { display: flex; gap: 10px; grid-column: 1 / -1; justify-content: flex-end; margin-top: 10px; }
@@ -170,7 +169,7 @@
 
         <div class="form-grid">
             <div class="form-group single-only">
-                <label>Alimento (Aggiungi "senza glutine" se serve)</label>
+                <label>Alimento</label>
                 <input type="text" id="name" placeholder="es. Pollo">
             </div>
             <div class="form-group single-only">
@@ -180,6 +179,11 @@
             <div class="form-group single-only">
                 <label>Unità</label>
                 <input type="text" id="unit" placeholder="es. fette, kg">
+            </div>
+
+            <div class="form-group single-only" style="grid-column: 1 / -1; flex-direction: row; align-items: center; gap: 8px; margin-bottom: 5px;">
+                <input type="checkbox" id="isGlutenFree" style="width: 22px; height: 22px; cursor: pointer;">
+                <label for="isGlutenFree" style="margin: 0; color: #e67e22; opacity: 1; cursor: pointer; font-size: 0.95rem;">🌾 Segna come "Senza Glutine"</label>
             </div>
 
             <div class="form-group" id="bulk-group">
@@ -261,22 +265,17 @@
     // --- DIZIONARI PER IL CERVELLO ANALITICO ---
     const numberWords = { 'un':1, 'uno':1, 'una':1, 'due':2, 'tre':3, 'quattro':4, 'cinque':5, 'sei':6, 'sette':7, 'otto':8, 'nove':9, 'dieci':10 };
 
-    // ❄️ Parole chiave che forzano SEMPRE l'inserimento nel FREEZER
     const freezerKeywords = [
         'surgelat', 'findus', 'bastoncini', 'sofficini', 'gelato', 'gelati', 'ghiaccio', 
         'minestrone', 'patatine fritte', 'pizza surgelata', 'piselli', 'spinaci in cubetti', 'cubetti'
     ];
 
-    // 🥫 & ❄️ Dizionario Super-Esteso (Dispensa e Frigo)
     const smartCategories = {
-        // DISPENSA
         'pasta':'pasta', 'spaghetti':'pasta', 'penne':'pasta', 'maccheroni':'pasta', 'riso':'pasta', 'farina':'pasta', 'pane':'pasta', 'piadina':'pasta', 'pangrattato':'pasta', 'gnocchi':'pasta', 'crackers':'pasta', 'grissini':'pasta', 'taralli':'pasta',
         'tonno':'scatolette', 'sgombro':'scatolette', 'carne in scatola':'scatolette', 'simmenthal':'scatolette', 'fagioli':'scatolette', 'ceci':'scatolette', 'lenticchie':'scatolette', 'mais':'scatolette', 'pelati':'scatolette', 'passata':'scatolette', 'polpa':'scatolette', 'olive':'scatolette', 'capperi':'scatolette', 'sottaceti':'scatolette', 'pesto':'scatolette',
         'olio':'condimenti', 'aceto':'condimenti', 'sale':'condimenti', 'pepe':'condimenti', 'zucchero':'condimenti', 'spezie':'condimenti', 'origano':'condimenti', 'basilico':'condimenti', 'rosmarino':'condimenti', 'dado':'condimenti', 'maionese':'condimenti', 'ketchup':'condimenti', 'salsa':'condimenti', 'senape':'condimenti',
         'biscotti':'colazione', 'cereali':'colazione', 'cornetti':'colazione', 'brioche':'colazione', 'caffè':'colazione', 'marmellata':'colazione', 'fette biscottate':'colazione', 'nutella':'colazione', 'cioccolato':'colazione', 'cacao':'colazione', 'miele':'colazione', 'tè':'colazione', 'camomilla':'colazione',
         'acqua':'bevande', 'vino':'bevande', 'birra':'bevande', 'succo':'bevande', 'cola':'bevande', 'aranciata':'bevande', 'estathè':'bevande', 'liquore':'bevande', 'spumante':'bevande',
-        
-        // FRIGO
         'pollo':'carne', 'tacchino':'carne', 'manzo':'carne', 'maiale':'carne', 'fettine':'carne', 'macinato':'carne', 'hamburger':'carne', 'salsiccia':'carne', 'pesce':'carne', 'salmone':'carne', 'branzino':'carne', 'orata':'carne', 'prosciutto':'carne', 'salame':'carne', 'mortadella':'carne', 'pancetta':'carne', 'speck':'carne', 'bresaola':'carne', 'affettati':'carne', 'wurstel':'carne',
         'mela':'verdura', 'mele':'verdura', 'zucchine':'verdura', 'insalata':'verdura', 'pomodori':'verdura', 'frutta':'verdura', 'verdura':'verdura', 'patate':'verdura', 'carote':'verdura', 'cipolle':'verdura', 'aglio':'verdura', 'limoni':'verdura', 'arance':'verdura', 'banane':'verdura', 'fragole':'verdura', 'pesche':'verdura', 'melanzane':'verdura', 'peperoni':'verdura', 'broccoli':'verdura', 'spinaci':'verdura',
         'latte':'latticini', 'formaggio':'latticini', 'uova':'latticini', 'burro':'latticini', 'yogurt':'latticini', 'mozzarella':'latticini', 'parmigiano':'latticini', 'grana':'latticini', 'ricotta':'latticini', 'stracchino':'latticini', 'provola':'latticini', 'gorgonzola':'latticini', 'sottiletta':'latticini', 'mascarpone':'latticini', 'panna':'latticini',
@@ -357,30 +356,24 @@
         let text = rawText.trim().toLowerCase();
         let isGF = false;
 
-        // 1. Controlla Senza Glutine
         if (text.includes('senza glutine') || text.includes('gluten free')) {
             isGF = true;
             text = text.replace('senza glutine', '').replace('gluten free', '').trim();
         }
 
-        // 2. Converte i numeri a parole in cifre (es. "due" -> "2")
         let words = text.split(/\s+/);
         if (words.length > 0 && numberWords[words[0]]) {
             words[0] = numberWords[words[0]];
             text = words.join(' ');
         }
 
-        // 3. Estrae Quantità e Unità
         let qty = 1; let unit = ''; let name = text;
-        
-        // Cerca pattern: "2 pacchi di pasta" o "2 fette carne"
         const matchStart = text.match(/^(\d+)\s*(kg|g|litri|l|ml|pacchi|pacco|scatole|scatola|bottiglie|bottiglia|fette|fetta|confezioni|confezione|pz)?\s*(?:di\s+)?(.+)$/i);
         if (matchStart) {
             qty = parseInt(matchStart[1]);
             unit = matchStart[2] || '';
             name = matchStart[3];
         } else {
-            // Cerca pattern inverso: "pasta 2"
             const matchEnd = text.match(/^(.+)\s+(\d+)$/i);
             if(matchEnd) {
                 name = matchEnd[1];
@@ -388,38 +381,31 @@
             }
         }
 
-        // 4. Categorizzazione Intelligente
         let finalCategory = document.getElementById('category').value; 
         let finalLocation = document.getElementById('location').value;
 
-        // Cerca prima nelle categorie standard (Frigo o Dispensa)
         for (const [key, cat] of Object.entries(smartCategories)) {
             if (name.includes(key)) {
                 finalCategory = cat;
-                // Auto-assegna la destinazione corretta se ha senso
                 if (['pasta', 'scatolette', 'condimenti', 'colazione', 'bevande'].includes(cat)) finalLocation = 'dispensa';
                 if (['carne', 'verdura', 'latticini', 'pronti'].includes(cat)) finalLocation = 'frigo';
                 break;
             }
         }
 
-        // 5. Intercettatore FREEZER (Sovrascrive tutto se trova la parola magica)
         for (const word of freezerKeywords) {
             if (name.includes(word)) {
                 finalLocation = 'freezer';
-                // Assegna "Pronti" se non è già chiaramente carne o verdura
                 if(!['carne', 'verdura'].includes(finalCategory)) finalCategory = 'pronti';
                 break;
             }
         }
 
-        // 6. Formattazione finale (Maiuscola e Tag)
         name = name.charAt(0).toUpperCase() + name.slice(1);
         if (isGF) name += ' <span class="tag-sg">🌾(SG)</span>';
 
         return { name, qty, unit, category: finalCategory, location: finalLocation };
     }
-
 
     function processAdd(target) {
         const baseLocation = document.getElementById('location').value;
@@ -430,12 +416,15 @@
             const qty = parseInt(document.getElementById('qty').value);
             const unit = document.getElementById('unit').value.trim();
             const category = document.getElementById('category').value;
+            const isGFChecked = document.getElementById('isGlutenFree').checked; // Legge il checkbox
+
             if(!rawName || isNaN(qty)) return alert("Compila Nome e Quantità!");
             
-            // Applica il controllo senza glutine anche in modalità singola!
             let finalName = rawName;
-            if(finalName.toLowerCase().includes('senza glutine')) {
-                finalName = finalName.replace(/senza glutine/gi, '').trim() + ' <span class="tag-sg">🌾(SG)</span>';
+            
+            // Applica il controllo senza glutine (sia dalla spunta che dal testo)
+            if(isGFChecked || finalName.toLowerCase().includes('senza glutine') || finalName.toLowerCase().includes('gluten free')) {
+                finalName = finalName.replace(/senza glutine/gi, '').replace(/gluten free/gi, '').trim() + ' <span class="tag-sg">🌾(SG)</span>';
             }
             
             executeAdd(finalName, qty, unit, baseLocation, category, baseDate, target);
@@ -446,15 +435,19 @@
             
             lines.forEach(line => {
                 if(!line.trim()) return;
-                const parsed = parseSmartItem(line); // Usa il Cervello Analitico
+                const parsed = parseSmartItem(line); 
                 executeAdd(parsed.name, parsed.qty, parsed.unit, parsed.location, parsed.category, baseDate, target);
                 addedCount++;
             });
             if(addedCount === 0) return alert("Inserisci almeno un alimento!");
         }
+        
+        // Reset dei campi
         document.getElementById('name').value = '';
         document.getElementById('qty').value = '1';
+        document.getElementById('unit').value = '';
         document.getElementById('bulkText').value = '';
+        document.getElementById('isGlutenFree').checked = false; 
         render();
     }
 
@@ -501,6 +494,7 @@
     }
 
     function deleteShoppingItem(id) { shoppingList = shoppingList.filter(item => item.id !== id); saveShoppingData(); render(); }
+    
     function askDateForBoughtItem(id) {
         const item = shoppingList.find(i => i.id === id);
         document.getElementById(`action-${id}`).innerHTML = `
@@ -515,6 +509,7 @@
             </div>
         `;
     }
+    
     function confirmPurchase(id) {
         const dateVal = document.getElementById(`buy-date-${id}`).value;
         const locVal = document.getElementById(`buy-loc-${id}`).value;
