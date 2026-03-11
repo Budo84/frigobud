@@ -249,7 +249,7 @@
         <button onclick="window.print()">📄 Salva PDF Totale</button>
         <button onclick="exportJSON()">⬇️ Esporta Backup</button>
         <button onclick="document.getElementById('importFile').click()">⬆️ Importa</button>
-        <input type="file" id="importFile" accept=".json" onchange="importJSON(event)">
+        <input type="file" id="importFile" accept=".json, application/json, text/plain, */*" onchange="importJSON(event)">
     </div>
 </div>
 
