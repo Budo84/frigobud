@@ -772,10 +772,14 @@
     }
 
     function render() {
-        const lists = { frigo: '', freezer: '', spesa: '' };
+        const lists = { spesa: '' };
+        
         const allDispensa = {...catDispensa, ...customCategories.dispensa};
-        const dispensaShelves = {}; 
-        Object.keys(allDispensa).forEach(k => dispensaShelves[k] = '');
+        const allFrigo = {...catFrigo, ...customCategories.frigo};
+        
+        const dispensaShelves = {}; Object.keys(allDispensa).forEach(k => dispensaShelves[k] = '');
+        const frigoShelves = {}; Object.keys(allFrigo).forEach(k => frigoShelves[k] = '');
+        const freezerShelves = {}; Object.keys(allFrigo).forEach(k => freezerShelves[k] = '');
 
         const searchTerm = document.getElementById('searchBar').value.toLowerCase();
         const sortBy = document.getElementById('sortBy').value;
@@ -788,25 +792,39 @@
 
         filteredSpesa.forEach(item => lists.spesa += buildCardHTML(item, true));
         filteredInv.forEach(item => {
-            if(item.location === 'frigo' || item.location === 'freezer') lists[item.location] += buildCardHTML(item, false);
-            else if (item.location === 'dispensa') {
-                if(dispensaShelves[item.category] !== undefined) {
-                    dispensaShelves[item.category] += buildCardHTML(item, false);
-                } else {
-                    dispensaShelves['altro_d'] += buildCardHTML(item, false);
-                }
+            if (item.location === 'dispensa') {
+                if(dispensaShelves[item.category] !== undefined) dispensaShelves[item.category] += buildCardHTML(item, false);
+                else dispensaShelves['altro_d'] += buildCardHTML(item, false);
+            } 
+            else if (item.location === 'frigo') {
+                if(frigoShelves[item.category] !== undefined) frigoShelves[item.category] += buildCardHTML(item, false);
+                else frigoShelves['altro_f'] += buildCardHTML(item, false);
+            } 
+            else if (item.location === 'freezer') {
+                if(freezerShelves[item.category] !== undefined) freezerShelves[item.category] += buildCardHTML(item, false);
+                else freezerShelves['altro_f'] += buildCardHTML(item, false);
             }
         });
 
-        document.getElementById('frigo-list').innerHTML = lists.frigo;
-        document.getElementById('freezer-list').innerHTML = lists.freezer;
-        document.getElementById('spesa-list').innerHTML = lists.spesa || '<p style="text-align:center; color:#888;">Niente da comprare! 🎉</p>';
+        let frigoHTML = '';
+        for (const [key, name] of Object.entries(allFrigo)) {
+            if (frigoShelves[key] !== '') frigoHTML += `<div class="shelf-title">${name}</div>${frigoShelves[key]}`;
+        }
+        document.getElementById('frigo-list').innerHTML = frigoHTML || '<p style="text-align:center; color:var(--text-color); opacity:0.7;">Frigorifero vuoto!</p>';
+
+        let freezerHTML = '';
+        for (const [key, name] of Object.entries(allFrigo)) {
+            if (freezerShelves[key] !== '') freezerHTML += `<div class="shelf-title">${name}</div>${freezerShelves[key]}`;
+        }
+        document.getElementById('freezer-list').innerHTML = freezerHTML || '<p style="text-align:center; color:var(--text-color); opacity:0.7;">Freezer vuoto!</p>';
         
         let dispensaHTML = '';
         for (const [key, name] of Object.entries(allDispensa)) {
             if (dispensaShelves[key] !== '') dispensaHTML += `<div class="shelf-title">${name}</div>${dispensaShelves[key]}`;
         }
         document.getElementById('dispensa-list').innerHTML = dispensaHTML || '<p style="text-align:center; color:var(--text-color); opacity:0.7;">Dispensa vuota!</p>';
+
+        document.getElementById('spesa-list').innerHTML = lists.spesa || '<p style="text-align:center; color:#888;">Niente da comprare! 🎉</p>';
     }
 
     function exportJSON() {
@@ -830,9 +848,7 @@
         }; reader.readAsText(file);
     }
 
-    // --- NUOVO: CONTROLLO SCADENZE AL CARICAMENTO (POPUP) ---
     function checkExpirationsOnLoad() {
-        // Se l'abbiamo già mostrato in questa sessione, non lo mostra più per non disturbare
         if (sessionStorage.getItem('expiryAlertShown') === 'true') return;
 
         const today = new Date(); 
@@ -842,7 +858,6 @@
         let expired = [];
         let expiringSoon = [];
 
-        // Scansiona l'inventario in cerca di cibi che stanno andando a male
         inventory.forEach(item => {
             if(item.location !== 'frigo' || !item.date) return; 
             const diffDays = Math.ceil((new Date(item.date) - today) / (1000 * 60 * 60 * 24));
@@ -857,7 +872,6 @@
             }
         });
 
-        // Costruisce la lista grafica del popup
         if (expired.length > 0) {
             alertHTML += `<h3>Prodotti Scaduti:</h3>` + expired.map(i => `<p>${i}</p>`).join('');
             hasAlerts = true;
@@ -867,7 +881,6 @@
             hasAlerts = true;
         }
 
-        // Se c'è almeno un alert, mostra il popup!
         if (hasAlerts) {
             document.getElementById('expiry-list').innerHTML = alertHTML;
             document.getElementById('expiry-modal').classList.add('active');
@@ -881,7 +894,7 @@
 
     updateFormCategories();
     render();
-    checkExpirationsOnLoad(); // Fa partire il controllo appena la pagina carica
+    checkExpirationsOnLoad(); 
 
     if ('serviceWorker' in navigator) { window.addEventListener('load', () => navigator.serviceWorker.register('sw.js')); }
 </script>
