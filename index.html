@@ -61,7 +61,7 @@
         .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; align-items: end; }
         .form-group { display: flex; flex-direction: column; }
         .form-group label { font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; opacity: 0.8; }
-        .form-group input, .form-group select, .form-group textarea { padding: 10px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; outline: none; transition: 0.2s; width: 100%; }
+        .form-group input[type="text"], .form-group input[type="number"], .form-group input[type="date"], .form-group select, .form-group textarea { padding: 10px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; outline: none; transition: 0.2s; width: 100%; }
         
         #bulk-group { grid-column: 1 / -1; display: none; }
         #bulkText { resize: vertical; min-height: 80px; }
@@ -112,7 +112,7 @@
         .date-danger { background: var(--danger); color: white; border:none; }
         .date-warning { background: var(--warning); color: white; border:none; }
         
-        .btn-action-icon { background: none; border: none; font-size: 1.4rem; cursor: pointer; padding: 5px; }
+        .btn-action-icon { background: none; border: none; font-size: 1.3rem; cursor: pointer; padding: 5px; }
         .c-delete { color: var(--danger); } .c-check { color: var(--success); } .c-move { color: var(--info); } .c-edit { color: #f39c12; }
         
         .inline-date-picker { display: flex; align-items: center; gap: 8px; background: var(--card-bg); padding: 10px; border-radius: 8px; border: 1px solid var(--input-border); width: 100%; flex-wrap: wrap; }
@@ -265,6 +265,7 @@
     const icons = { 'carne': '🍗', 'verdura': '🥦', 'latticini': '🧀', 'pronti': '🍲', 'altro_f': '📦', 'pasta': '🍝', 'scatolette': '🥫', 'condimenti': '🧂', 'colazione': '🍪', 'bevande': '🧃', 'altro_d': '📦' };
 
     const numberWords = { 'un':1, 'uno':1, 'una':1, 'due':2, 'tre':3, 'quattro':4, 'cinque':5, 'sei':6, 'sette':7, 'otto':8, 'nove':9, 'dieci':10 };
+    const freezerKeywords = ['surgelat', 'findus', 'bastoncini', 'sofficini', 'gelato', 'gelati', 'ghiaccio', 'minestrone', 'patatine fritte', 'pizza surgelata', 'piselli', 'spinaci', 'cubetti'];
     const smartCategories = {
         'pollo':'carne', 'carne':'carne', 'pesce':'carne', 'tonno':'scatolette', 'salmone':'carne', 'hamburger':'carne',
         'pasta':'pasta', 'riso':'pasta', 'pane':'pasta', 'farina':'pasta', 'piadina':'pasta',
@@ -452,6 +453,13 @@
                     break;
                 }
             }
+            for (const word of freezerKeywords) {
+                if (name.includes(word)) {
+                    finalLocation = 'freezer';
+                    if(!['carne', 'verdura'].includes(finalCategory)) finalCategory = 'pronti';
+                    break;
+                }
+            }
         }
 
         name = name.charAt(0).toUpperCase() + name.slice(1);
@@ -459,7 +467,6 @@
 
         return { name, qty, unit, category: finalCategory, location: finalLocation };
     }
-
 
     function processAdd(target) {
         const baseLocation = document.getElementById('location').value;
@@ -496,16 +503,36 @@
         
         document.getElementById('name').value = '';
         document.getElementById('qty').value = '1';
+        document.getElementById('unit').value = '';
         document.getElementById('bulkText').value = '';
         document.getElementById('isGlutenFree').checked = false; 
         render();
     }
 
+    // --- AGGIUNTO IL SISTEMA ANTI-DOPPIONI QUI ---
     function executeAdd(name, qty, unit, location, category, date, target) {
-        const newItem = { id: Date.now() + Math.random(), name, qty, unit, location, category, date: date || '' };
         learnPreference(name, location, category);
-        if(target === 'inventory') { inventory.push(newItem); saveData(); } 
-        else { shoppingList.push(newItem); saveShoppingData(); }
+        let targetList = target === 'inventory' ? inventory : shoppingList;
+        let d = date || '';
+        let u = unit || '';
+        
+        // Controlla se esiste un doppione (stesso nome, luogo, data e unità)
+        let existingItem = targetList.find(i => 
+            i.name.trim().toLowerCase() === name.trim().toLowerCase() &&
+            i.location === location &&
+            i.date === d &&
+            (i.unit || '').trim().toLowerCase() === u.trim().toLowerCase()
+        );
+
+        if (existingItem) {
+            existingItem.qty = Number(existingItem.qty) + Number(qty);
+        } else {
+            const newItem = { id: Date.now() + Math.random(), name, qty: Number(qty), unit: u, location, category, date: d };
+            targetList.push(newItem);
+        }
+        
+        if(target === 'inventory') { saveData(); } 
+        else { saveShoppingData(); }
     }
 
     function editItemName(id) {
@@ -515,12 +542,10 @@
             let newName = prompt("Modifica il nome del prodotto:", cleanNameForPrompt);
             
             if(newName && newName.trim() !== "") {
-                if(item.name.includes('(SG)')) {
-                    item.name = newName.trim() + ' <span class="tag-sg">🌾(SG)</span>';
-                } else {
-                    item.name = newName.trim();
-                }
+                if(item.name.includes('(SG)')) item.name = newName.trim() + ' <span class="tag-sg">🌾(SG)</span>';
+                else item.name = newName.trim();
                 learnPreference(item.name, item.location, item.category);
+                
                 saveData(); saveShoppingData(); render();
             }
         }
@@ -539,6 +564,7 @@
         window.open(`https://www.google.com/search?q=ricette+con+${encodeURIComponent(ingredienti)}`, '_blank'); 
     }
 
+    // --- AGGIUNTO IL SISTEMA ANTI-DOPPIONI NEL RE-INSERIMENTO SPESA ---
     function changeQty(id, delta) {
         const item = inventory.find(i => i.id === id);
         if(item) {
@@ -550,8 +576,19 @@
                 const cleanName = item.name.replace(/<[^>]*>?/gm, ''); 
                 if(confirm(`Hai finito: ${cleanName}!\nVuoi aggiungerlo alla Lista della Spesa?`)) {
                     inventory = inventory.filter(i => i.id !== id);
-                    item.qty = 1; item.date = ''; 
-                    shoppingList.push(item);
+                    
+                    let existingSpesa = shoppingList.find(i => 
+                        i.name.trim().toLowerCase() === item.name.trim().toLowerCase() &&
+                        i.location === item.location &&
+                        (i.unit || '').trim().toLowerCase() === (item.unit || '').trim().toLowerCase()
+                    );
+
+                    if (existingSpesa) {
+                        existingSpesa.qty = Number(existingSpesa.qty) + 1;
+                    } else {
+                        item.qty = 1; item.date = ''; 
+                        shoppingList.push(item);
+                    }
                     saveData(); saveShoppingData(); render();
                 } else {
                     deleteItem(id);
@@ -563,6 +600,7 @@
     }
 
     function deleteShoppingItem(id) { shoppingList = shoppingList.filter(item => item.id !== id); saveShoppingData(); render(); }
+    
     function askDateForBoughtItem(id) {
         const item = shoppingList.find(i => i.id === id);
         let locOptions = `
@@ -578,8 +616,10 @@
             </div>
         `;
     }
+    
+    // --- AGGIUNTO IL SISTEMA ANTI-DOPPIONI NELLO SPOSTAMENTO SPESA->CASA ---
     function confirmPurchase(id) {
-        const dateVal = document.getElementById(`buy-date-${id}`).value;
+        const dateVal = document.getElementById(`buy-date-${id}`).value || '';
         const locVal = document.getElementById(`buy-loc-${id}`).value;
         const itemIndex = shoppingList.findIndex(i => i.id === id);
         if(itemIndex > -1) {
@@ -590,7 +630,21 @@
             if (locVal === 'dispensa' && !allDispensa[item.category]) item.category = 'altro_d';
             if (locVal !== 'dispensa' && !allFrigo[item.category]) item.category = 'altro_f';
             learnPreference(item.name, item.location, item.category);
-            inventory.push(item); shoppingList.splice(itemIndex, 1);
+
+            let existingItem = inventory.find(i => 
+                i.name.trim().toLowerCase() === item.name.trim().toLowerCase() &&
+                i.location === item.location &&
+                i.date === item.date &&
+                (i.unit || '').trim().toLowerCase() === (item.unit || '').trim().toLowerCase()
+            );
+
+            if (existingItem) {
+                existingItem.qty = Number(existingItem.qty) + Number(item.qty);
+            } else {
+                inventory.push(item); 
+            }
+
+            shoppingList.splice(itemIndex, 1);
             saveData(); saveShoppingData(); render();
         }
     }
@@ -604,17 +658,35 @@
             </div>
         `;
     }
+    
+    // --- AGGIUNTO IL SISTEMA ANTI-DOPPIONI NELLO SPOSTAMENTO FRIGO<->FREEZER ---
     function confirmMove(id) {
-        const dateVal = document.getElementById(`move-date-${id}`).value;
+        const dateVal = document.getElementById(`move-date-${id}`).value || '';
         const locVal = document.getElementById(`move-loc-${id}`).value;
-        const item = inventory.find(i => i.id === id);
-        if(item) {
-            item.location = locVal; item.date = dateVal;
-            const allDispensa = {...catDispensa, ...customCategories.dispensa};
-            const allFrigo = {...catFrigo, ...customCategories.frigo};
-            if (locVal === 'dispensa' && !allDispensa[item.category]) item.category = 'altro_d';
-            if (locVal !== 'dispensa' && !allFrigo[item.category]) item.category = 'altro_f';
-            learnPreference(item.name, item.location, item.category);
+        const itemIndex = inventory.findIndex(i => i.id === id);
+        if(itemIndex > -1) {
+            const item = inventory[itemIndex];
+            
+            let existingItem = inventory.find(i => 
+                i.id !== item.id &&
+                i.name.trim().toLowerCase() === item.name.trim().toLowerCase() &&
+                i.location === locVal &&
+                i.date === dateVal &&
+                (i.unit || '').trim().toLowerCase() === (item.unit || '').trim().toLowerCase()
+            );
+
+            if (existingItem) {
+                existingItem.qty = Number(existingItem.qty) + Number(item.qty);
+                inventory.splice(itemIndex, 1);
+            } else {
+                item.location = locVal; item.date = dateVal;
+                const allDispensa = {...catDispensa, ...customCategories.dispensa};
+                const allFrigo = {...catFrigo, ...customCategories.frigo};
+                if (locVal === 'dispensa' && !allDispensa[item.category]) item.category = 'altro_d';
+                if (locVal !== 'dispensa' && !allFrigo[item.category]) item.category = 'altro_f';
+            }
+            
+            learnPreference(item.name, locVal, existingItem ? existingItem.category : item.category);
             saveData(); render();
         }
     }
@@ -650,9 +722,17 @@
 
         let locTag = isSpesa ? `<span style="font-size:0.75rem; color:#888;">(➡️ ${item.location})</span>` : '';
         let actionsHTML = isSpesa ? `
-            <div><button class="btn-action-icon c-edit" onclick="editItemName(${item.id})" title="Modifica">✏️</button><button class="btn-action-icon c-check" onclick="askDateForBoughtItem(${item.id})">✔️</button><button class="btn-action-icon c-delete" onclick="deleteShoppingItem(${item.id})">✖</button></div>
+            <div>
+                <button class="btn-action-icon c-edit" onclick="editItemName(${item.id})" title="Modifica Nome">✏️</button>
+                <button class="btn-action-icon c-check" onclick="askDateForBoughtItem(${item.id})">✔️</button>
+                <button class="btn-action-icon c-delete" onclick="deleteShoppingItem(${item.id})">✖</button>
+            </div>
         ` : `
-            <div><button class="btn-action-icon c-edit" onclick="editItemName(${item.id})" title="Modifica">✏️</button><button class="btn-action-icon c-move" onclick="askMoveItem(${item.id})">🔄</button><button class="btn-action-icon c-delete" onclick="deleteItem(${item.id})">✖</button></div>
+            <div>
+                <button class="btn-action-icon c-edit" onclick="editItemName(${item.id})" title="Modifica Nome">✏️</button>
+                <button class="btn-action-icon c-move" onclick="askMoveItem(${item.id})">🔄</button>
+                <button class="btn-action-icon c-delete" onclick="deleteItem(${item.id})">✖</button>
+            </div>
         `;
 
         return `
