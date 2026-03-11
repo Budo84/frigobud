@@ -10,6 +10,9 @@
     <link rel="apple-touch-icon" href="icon-192.png">
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
     <style>
         :root {
             --bg-color: #f4f7f6; --text-color: #333;
@@ -63,6 +66,10 @@
         .form-group label { font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; opacity: 0.8; }
         .form-group input[type="text"], .form-group input[type="number"], .form-group input[type="date"], .form-group select, .form-group textarea { padding: 10px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; outline: none; transition: 0.2s; width: 100%; }
         
+        /* CSS Pulsante Scanner */
+        .input-row { display: flex; gap: 8px; width: 100%; }
+        .btn-scan { background: #34495e; color: white; border: none; border-radius: 8px; padding: 0 15px; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; }
+
         #bulk-group { grid-column: 1 / -1; display: none; }
         #bulkText { resize: vertical; min-height: 80px; }
         .mic-btn { background: #e74c3c; color: white; margin-top: 8px; width: 100%; }
@@ -119,15 +126,20 @@
         .inline-date-picker { display: flex; align-items: center; gap: 8px; background: var(--card-bg); padding: 10px; border-radius: 8px; border: 1px solid var(--input-border); width: 100%; flex-wrap: wrap; }
         .inline-date-picker select, .inline-date-picker input { flex: 1; min-width: 120px; padding: 8px; }
 
-        /* --- NUOVO: CSS POPUP SCADENZE --- */
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 2000; animation: fadeIn 0.3s ease; padding: 20px; }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 2000; animation: fadeIn 0.3s ease; padding: 20px; }
         .modal-overlay.active { display: flex; }
+        
         .modal-content { background: var(--card-bg); padding: 25px; border-radius: 15px; width: 100%; max-width: 400px; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.3); text-align: center; }
         .modal-content h2 { margin-bottom: 15px; color: var(--danger); font-size: 1.4rem; }
         .modal-list { text-align: left; margin-bottom: 20px; }
         .modal-list h3 { font-size: 1.1rem; color: var(--text-color); margin-top: 15px; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 2px solid var(--input-border); }
         .modal-list p { margin: 8px 0; font-size: 0.95rem; color: var(--text-color); display: flex; justify-content: space-between;}
         .modal-close { background: #2c3e50; color: white; width: 100%; padding: 12px; font-size: 1.1rem; border-radius: 10px; cursor: pointer; border: none; }
+
+        /* CSS Modal Fotocamera */
+        .scanner-container { background: var(--card-bg); width: 100%; max-width: 500px; border-radius: 15px; overflow: hidden; display: flex; flex-direction: column; }
+        #reader { width: 100%; background: #000; min-height: 300px; }
+        .scanner-footer { padding: 15px; display: flex; justify-content: center; background: var(--card-bg); }
 
         @media (max-width: 768px) {
             body { padding: 15px 15px 100px 15px; }
@@ -169,6 +181,15 @@
     </div>
 </div>
 
+<div class="modal-overlay" id="scanner-modal">
+    <div class="scanner-container">
+        <div id="reader"></div>
+        <div class="scanner-footer">
+            <button class="modal-close" style="background: var(--danger);" onclick="stopScanner()">✖ Annulla Scanner</button>
+        </div>
+    </div>
+</div>
+
 <nav class="bottom-nav">
     <div class="nav-item active" onclick="switchTab('frigo')"><span class="nav-icon">❄️</span> Frigo</div>
     <div class="nav-item" onclick="switchTab('dispensa')"><span class="nav-icon">🥫</span> Dispensa</div>
@@ -190,7 +211,10 @@
         <div class="form-grid">
             <div class="form-group single-only">
                 <label>Alimento</label>
-                <input type="text" id="name" placeholder="es. Pollo">
+                <div class="input-row">
+                    <input type="text" id="name" placeholder="es. Pollo (o scansiona)">
+                    <button type="button" class="btn-scan" onclick="startScanner()" title="Scansiona Codice a Barre">📷</button>
+                </div>
             </div>
             <div class="form-group single-only">
                 <label>Quantità</label>
@@ -343,7 +367,6 @@
         dateLabel.innerText = loc === 'frigo' ? 'Scadenza (Opz.)' : (loc === 'freezer' ? 'Congelato (Opz.)' : 'Scadenza (Opz.)');
     }
 
-    // --- FUNZIONE PER GENERARE LE TENDINE DINAMICHE ---
     function getCategoryOptionsHTML(loc, selectedCat) {
         let options = '';
         let targetDict = (loc === 'dispensa') ? {...catDispensa, ...customCategories.dispensa} : {...catFrigo, ...customCategories.frigo};
@@ -355,7 +378,6 @@
         return options;
     }
 
-    // --- NUOVA FUNZIONE: Gestisce la creazione di categoria dai mini-menu ---
     function handleDynamicCategoryChange(selectEl, loc) {
         if(selectEl.value === 'add_new') {
             const newCatName = prompt("Nome della nuova categoria (es. 🍷 Vini / 👶 Pappa Bimbi):");
@@ -365,12 +387,9 @@
                 else customCategories.frigo[catKey] = newCatName.trim();
                 
                 localStorage.setItem('customCategories', JSON.stringify(customCategories));
-                updateFormCategories(); // Aggiorna anche il menu principale in background
-                
-                // Ricrea le opzioni e seleziona quella appena creata
+                updateFormCategories(); 
                 selectEl.innerHTML = getCategoryOptionsHTML(loc, catKey);
             } else {
-                // Se l'utente annulla, rimette le opzioni normali senza "add_new" selezionato
                 selectEl.innerHTML = getCategoryOptionsHTML(loc, '');
             }
         }
@@ -415,6 +434,75 @@
         document.querySelectorAll('.single-only').forEach(el => el.style.display = mode === 'single' ? 'flex' : 'none');
         document.getElementById('bulk-group').style.display = mode === 'bulk' ? 'flex' : 'none';
     }
+
+    // --- NUOVO: LOGICA LETTORE CODICI A BARRE ---
+    let html5QrcodeScanner = null;
+
+    function startScanner() {
+        document.getElementById('scanner-modal').classList.add('active');
+        
+        if(!html5QrcodeScanner) {
+            html5QrcodeScanner = new Html5Qrcode("reader");
+        }
+        
+        html5QrcodeScanner.start(
+            { facingMode: "environment" }, // Usa la fotocamera posteriore
+            { fps: 10, qrbox: { width: 250, height: 150 } },
+            onScanSuccess,
+            (errorMessage) => { /* Ignora gli errori di frame continui */ }
+        ).catch(err => {
+            alert("Impossibile accedere alla fotocamera. Verifica i permessi del browser.");
+            stopScanner();
+        });
+    }
+
+    function stopScanner() {
+        if(html5QrcodeScanner) {
+            html5QrcodeScanner.stop().then(() => {
+                document.getElementById('scanner-modal').classList.remove('active');
+            }).catch(err => {
+                document.getElementById('scanner-modal').classList.remove('active');
+            });
+        } else {
+            document.getElementById('scanner-modal').classList.remove('active');
+        }
+    }
+
+    async function onScanSuccess(decodedText, decodedResult) {
+        stopScanner(); // Ferma la fotocamera appena legge il codice
+        document.getElementById('name').value = "⏳ Ricerca prodotto...";
+        
+        try {
+            // Contatta il database mondiale OpenFoodFacts
+            let response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${decodedText}.json`);
+            let data = await response.json();
+            
+            if(data.status === 1) {
+                // Estrae il nome italiano, se manca usa quello generico
+                let prodName = data.product.product_name_it || data.product.product_name;
+                if(!prodName) prodName = "Prodotto Sconosciuto";
+                
+                document.getElementById('name').value = prodName;
+                
+                // Cerca se è un prodotto Gluten Free!
+                let labels = (data.product.labels || "").toLowerCase();
+                let allergens = (data.product.allergens || "").toLowerCase();
+                
+                if(labels.includes("gluten-free") || labels.includes("senza glutine") || allergens.includes("gluten-free")) {
+                    document.getElementById('isGlutenFree').checked = true;
+                } else {
+                    document.getElementById('isGlutenFree').checked = false;
+                }
+            } else {
+                alert("Codice a barre (" + decodedText + ") non trovato nel database.");
+                document.getElementById('name').value = "";
+            }
+        } catch(e) {
+            alert("Errore di rete. Controlla la tua connessione internet.");
+            document.getElementById('name').value = "";
+        }
+    }
+
 
     function startDictation() {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -674,7 +762,6 @@
 
     function deleteShoppingItem(id) { shoppingList = shoppingList.filter(item => item.id !== id); saveShoppingData(); render(); }
     
-    // --- TENDINA DINAMICA INSERITA IN ASK DATE FOR BOUGHT ITEM ---
     function askDateForBoughtItem(id) {
         const item = shoppingList.find(i => i.id === id);
         let locOptions = `
@@ -723,7 +810,6 @@
         }
     }
 
-    // --- TENDINA DINAMICA INSERITA IN ASK MOVE ITEM ---
     function askMoveItem(id) {
         const item = inventory.find(i => i.id === id);
         let locOptions = `
@@ -903,7 +989,6 @@
         }; reader.readAsText(file);
     }
 
-    // --- FUNZIONE CONDIVISIONE WHATSAPP ---
     function shareSpesaWhatsApp() {
         if (shoppingList.length === 0) {
             return alert("La lista della spesa è vuota! Niente da inviare. 🎉");
