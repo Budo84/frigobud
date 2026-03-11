@@ -85,8 +85,9 @@
         .area-content { padding: 15px; min-height: 100px; transition: background 0.3s; }
         
         .btn-recipe { background: white; color: var(--frigo-header); padding: 5px 10px; border-radius: 6px; font-size: 0.8rem; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .btn-wa { background: #25d366; color: white; padding: 5px 10px; border-radius: 6px; font-size: 0.8rem; border: none; font-weight: 600; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
 
-        #spesa-area .area-header { background: var(--spesa-header); justify-content: center;} 
+        #spesa-area .area-header { background: var(--spesa-header); justify-content: space-between;} 
         #spesa-area .area-content { background: var(--spesa-color); }
         #frigo-area .area-header { background: var(--frigo-header); } 
         #frigo-area .area-content { background: var(--frigo-color); }
@@ -118,7 +119,6 @@
         .inline-date-picker { display: flex; align-items: center; gap: 8px; background: var(--card-bg); padding: 10px; border-radius: 8px; border: 1px solid var(--input-border); width: 100%; flex-wrap: wrap; }
         .inline-date-picker select, .inline-date-picker input { flex: 1; min-width: 120px; padding: 8px; }
 
-        /* --- NUOVO: CSS POPUP SCADENZE --- */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 2000; animation: fadeIn 0.3s ease; padding: 20px; }
         .modal-overlay.active { display: flex; }
         .modal-content { background: var(--card-bg); padding: 25px; border-radius: 15px; width: 100%; max-width: 400px; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.3); text-align: center; }
@@ -260,7 +260,13 @@
         <div class="area" id="dispensa-area"><div class="area-header"><span>🥫 La tua Dispensa</span></div><div class="area-content" id="dispensa-list"></div></div>
     </div>
     <div id="view-spesa" class="view">
-        <div class="area" id="spesa-area"><div class="area-header"><span>🛒 Lista della Spesa</span></div><div class="area-content" id="spesa-list"></div></div>
+        <div class="area" id="spesa-area">
+            <div class="area-header">
+                <span>🛒 Lista della Spesa</span>
+                <button class="btn-wa" onclick="shareSpesaWhatsApp()">📲 Invia</button>
+            </div>
+            <div class="area-content" id="spesa-list"></div>
+        </div>
     </div>
 
     <div class="tools-section">
@@ -334,6 +340,17 @@
         
         catSelect.innerHTML += `<option value="add_new" style="font-weight:bold; color:var(--frigo-header);">➕ Crea Nuova Categoria...</option>`;
         dateLabel.innerText = loc === 'frigo' ? 'Scadenza (Opz.)' : (loc === 'freezer' ? 'Congelato (Opz.)' : 'Scadenza (Opz.)');
+    }
+
+    // --- FUNZIONE PER GENERARE LE TENDINE DINAMICHE ---
+    function getCategoryOptionsHTML(loc, selectedCat) {
+        let options = '';
+        let targetDict = (loc === 'dispensa') ? {...catDispensa, ...customCategories.dispensa} : {...catFrigo, ...customCategories.frigo};
+        for (const [key, value] of Object.entries(targetDict)) {
+            let selected = (key === selectedCat) ? 'selected' : '';
+            options += `<option value="${key}" ${selected}>${value}</option>`;
+        }
+        return options;
     }
 
     function checkNewCategory() {
@@ -634,6 +651,7 @@
 
     function deleteShoppingItem(id) { shoppingList = shoppingList.filter(item => item.id !== id); saveShoppingData(); render(); }
     
+    // --- TENDINA DINAMICA INSERITA IN ASK DATE FOR BOUGHT ITEM ---
     function askDateForBoughtItem(id) {
         const item = shoppingList.find(i => i.id === id);
         let locOptions = `
@@ -641,9 +659,15 @@
             <option value="freezer" ${item.location === 'freezer' ? 'selected' : ''}>Freezer</option>
             <option value="dispensa" ${item.location === 'dispensa' ? 'selected' : ''}>Dispensa</option>
         `;
+        
+        let catOptions = getCategoryOptionsHTML(item.location, item.category);
+
         document.getElementById(`action-${id}`).innerHTML = `
             <div class="inline-date-picker">
-                <select id="buy-loc-${id}">${locOptions}</select>
+                <select id="buy-loc-${id}" onchange="document.getElementById('buy-cat-${id}').innerHTML = getCategoryOptionsHTML(this.value, '')">
+                    ${locOptions}
+                </select>
+                <select id="buy-cat-${id}">${catOptions}</select>
                 <input type="date" id="buy-date-${id}">
                 <button style="background:var(--success); color:white; border:none; border-radius:6px;" onclick="confirmPurchase(${id})">OK</button>
             </div>
@@ -653,15 +677,14 @@
     function confirmPurchase(id) {
         const dateVal = document.getElementById(`buy-date-${id}`).value || '';
         const locVal = document.getElementById(`buy-loc-${id}`).value;
+        const catVal = document.getElementById(`buy-cat-${id}`).value; // Recupera la categoria scelta
         const itemIndex = shoppingList.findIndex(i => i.id === id);
         
         if(itemIndex > -1) {
             const item = shoppingList[itemIndex];
-            
-            const allDispensa = {...catDispensa, ...customCategories.dispensa};
-            const allFrigo = {...catFrigo, ...customCategories.frigo};
-            if (locVal === 'dispensa' && !allDispensa[item.category]) item.category = 'altro_d';
-            if (locVal !== 'dispensa' && !allFrigo[item.category]) item.category = 'altro_f';
+            item.date = dateVal; 
+            item.location = locVal;
+            item.category = catVal; // Assegna la categoria scelta
             
             learnPreference(item.name, locVal, item.category);
 
@@ -669,7 +692,6 @@
             if (existingItem) {
                 existingItem.qty = Number(existingItem.qty) + Number(item.qty);
             } else {
-                item.location = locVal; item.date = dateVal;
                 inventory.push(item); 
             }
 
@@ -678,11 +700,23 @@
         }
     }
 
+    // --- TENDINA DINAMICA INSERITA IN ASK MOVE ITEM ---
     function askMoveItem(id) {
+        const item = inventory.find(i => i.id === id);
+        let locOptions = `
+            <option value="frigo" ${item.location === 'frigo' ? 'selected' : ''}>Frigo</option>
+            <option value="freezer" ${item.location === 'freezer' ? 'selected' : ''}>Freezer</option>
+            <option value="dispensa" ${item.location === 'dispensa' ? 'selected' : ''}>Dispensa</option>
+        `;
+        let catOptions = getCategoryOptionsHTML(item.location, item.category);
+
         document.getElementById(`inv-action-${id}`).innerHTML = `
             <div class="inline-date-picker">
-                <select id="move-loc-${id}"><option value="frigo">Frigo</option><option value="freezer">Freezer</option><option value="dispensa">Dispensa</option></select>
-                <input type="date" id="move-date-${id}">
+                <select id="move-loc-${id}" onchange="document.getElementById('move-cat-${id}').innerHTML = getCategoryOptionsHTML(this.value, '')">
+                    ${locOptions}
+                </select>
+                <select id="move-cat-${id}">${catOptions}</select>
+                <input type="date" id="move-date-${id}" value="${item.date || ''}">
                 <button style="background:var(--success); color:white; border:none; border-radius:6px;" onclick="confirmMove(${id})">OK</button>
             </div>
         `;
@@ -691,6 +725,7 @@
     function confirmMove(id) {
         const dateVal = document.getElementById(`move-date-${id}`).value || '';
         const locVal = document.getElementById(`move-loc-${id}`).value;
+        const catVal = document.getElementById(`move-cat-${id}`).value; // Recupera la categoria
         const itemIndex = inventory.findIndex(i => i.id === id);
         
         if(itemIndex > -1) {
@@ -701,13 +736,11 @@
             
             if (existingItem) {
                 existingItem.qty = Number(existingItem.qty) + Number(item.qty);
-                learnPreference(item.name, locVal, existingItem.category);
+                learnPreference(item.name, locVal, catVal);
             } else {
-                item.location = locVal; item.date = dateVal;
-                const allDispensa = {...catDispensa, ...customCategories.dispensa};
-                const allFrigo = {...catFrigo, ...customCategories.frigo};
-                if (locVal === 'dispensa' && !allDispensa[item.category]) item.category = 'altro_d';
-                if (locVal !== 'dispensa' && !allFrigo[item.category]) item.category = 'altro_f';
+                item.location = locVal; 
+                item.date = dateVal;
+                item.category = catVal; // Assegna categoria scelta
                 
                 inventory.push(item);
                 learnPreference(item.name, locVal, item.category);
@@ -772,8 +805,7 @@
     }
 
     function render() {
-        const lists = { spesa: '' };
-        
+        const lists = { frigo: '', freezer: '', spesa: '' };
         const allDispensa = {...catDispensa, ...customCategories.dispensa};
         const allFrigo = {...catFrigo, ...customCategories.frigo};
         
@@ -846,6 +878,21 @@
                 saveData(); saveShoppingData(); updateFormCategories(); render(); alert("Importato con successo!"); 
             } catch (err) { alert("Errore JSON."); }
         }; reader.readAsText(file);
+    }
+
+    // --- FUNZIONE CONDIVISIONE WHATSAPP ---
+    function shareSpesaWhatsApp() {
+        if (shoppingList.length === 0) {
+            return alert("La lista della spesa è vuota! Niente da inviare. 🎉");
+        }
+        let text = "🛒 *LISTA DELLA SPESA:*\n\n";
+        shoppingList.forEach(item => {
+            let cleanName = item.name.replace(/<[^>]*>?/gm, '').trim(); 
+            let qty = isNaN(Number(item.qty)) ? item.qty : `${item.qty} ${item.unit || ''}`.trim();
+            text += `⬜ ${qty} ${cleanName}\n`;
+        });
+        
+        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
     }
 
     function checkExpirationsOnLoad() {
