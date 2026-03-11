@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="it" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Gestione Casa: Frigo & Dispensa</title>
     
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#4caf50">
+    <meta name="theme-color" content="#4caf50" id="meta-theme-color">
     <link rel="apple-touch-icon" href="icon-192.png">
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
@@ -19,40 +19,53 @@
             --spesa-color: #f3e5f5; --spesa-header: #9b59b6;
             --card-bg: #ffffff;
             --danger: #ff5252; --warning: #ffb142; --success: #2ecc71; --info: #3498db;
+            --input-bg: #ffffff; --input-border: #ddd;
+            --nav-bg: #ffffff; --nav-text: #7f8c8d; --nav-active-bg: #f8f9fa;
+        }
+
+        /* Tema Scuro */
+        [data-theme="dark"] {
+            --bg-color: #121212; --text-color: #e0e0e0;
+            --card-bg: #1e1e1e;
+            --frigo-color: #1a2e1f; --freezer-color: #162436;
+            --dispensa-color: #332211; --spesa-color: #2a1b31;
+            --frigo-header: #2e7d32; --freezer-header: #1565c0;
+            --dispensa-header: #d84315; --spesa-header: #6a1b9a;
+            --input-bg: #2c2c2c; --input-border: #444;
+            --nav-bg: #1e1e1e; --nav-text: #aaa; --nav-active-bg: #2c2c2c;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-color); padding: 20px 20px 90px 20px; }
-        header { text-align: center; margin-bottom: 20px; }
-        header h1 { font-size: 1.8rem; color: #2c3e50; }
-        .container { max-width: 1000px; margin: 0 auto; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-color); padding: 20px 20px 90px 20px; transition: background-color 0.3s, color 0.3s; }
+        
+        header { display: flex; justify-content: center; align-items: center; margin-bottom: 20px; position: relative; }
+        header h1 { font-size: 1.8rem; color: var(--text-color); }
+        .theme-toggle { position: absolute; right: 0; background: none; border: none; font-size: 1.5rem; cursor: pointer; padding: 5px; }
 
-        input, select, button, textarea { font-size: 16px; font-family: inherit; }
+        input, select, button, textarea { font-size: 16px; font-family: inherit; color: var(--text-color); }
 
         /* Navigazione Bottom */
-        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); display: flex; justify-content: space-around; z-index: 1000; padding-bottom: env(safe-area-inset-bottom); }
-        .nav-item { flex: 1; text-align: center; padding: 12px 0; font-size: 0.85rem; font-weight: 600; color: #7f8c8d; cursor: pointer; transition: 0.2s; border-bottom: 3px solid transparent; }
-        .nav-item.active { color: #2c3e50; border-bottom: 3px solid #2c3e50; background: #f8f9fa; }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--nav-bg); box-shadow: 0 -2px 10px rgba(0,0,0,0.2); display: flex; justify-content: space-around; z-index: 1000; padding-bottom: env(safe-area-inset-bottom); transition: background 0.3s; }
+        .nav-item { flex: 1; text-align: center; padding: 12px 0; font-size: 0.85rem; font-weight: 600; color: var(--nav-text); cursor: pointer; transition: 0.2s; border-bottom: 3px solid transparent; }
+        .nav-item.active { color: var(--text-color); border-bottom: 3px solid var(--text-color); background: var(--nav-active-bg); }
         .nav-icon { font-size: 1.4rem; display: block; margin-bottom: 4px; }
 
         .view { display: none; animation: fadeIn 0.3s ease; }
         .view.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Form Globale & Switch Modalità */
-        .form-section { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        /* Form */
+        .form-section { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; transition: background 0.3s; }
         
-        .mode-switch { display: flex; background: #eee; border-radius: 8px; overflow: hidden; margin-bottom: 15px; }
-        .mode-btn { flex: 1; background: none; color: #555; border-radius: 0; box-shadow: none; padding: 10px; font-size: 0.9rem; }
+        .mode-switch { display: flex; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; overflow: hidden; margin-bottom: 15px; }
+        .mode-btn { flex: 1; background: none; color: var(--text-color); border-radius: 0; box-shadow: none; padding: 10px; font-size: 0.9rem; }
         .mode-btn.active { background: #2c3e50; color: white; }
 
         .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; align-items: end; }
         .form-group { display: flex; flex-direction: column; }
-        .form-group label { font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: #555; }
-        .form-group input, .form-group select, .form-group textarea { padding: 10px; border: 1px solid #ddd; border-radius: 8px; outline: none; transition: 0.2s; width: 100%; }
-        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--frigo-header); }
+        .form-group label { font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; opacity: 0.8; }
+        .form-group input, .form-group select, .form-group textarea { padding: 10px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; outline: none; transition: 0.2s; width: 100%; }
         
-        /* Stile Textarea Multipla e Microfono */
         #bulk-group { grid-column: 1 / -1; display: none; }
         #bulkText { resize: vertical; min-height: 80px; }
         .mic-btn { background: #e74c3c; color: white; margin-top: 8px; width: 100%; }
@@ -62,47 +75,51 @@
         .form-actions { display: flex; gap: 10px; grid-column: 1 / -1; justify-content: flex-end; margin-top: 10px; }
         button { padding: 12px 16px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
         .btn-add { background: #2c3e50; color: white; }
-        .btn-add:hover { background: #1a252f; }
         .btn-spesa { background: var(--spesa-header); color: white; }
         
-        /* Controlli (Cerca / Ordina) */
         .controls-section { display: flex; gap: 10px; margin-bottom: 20px; }
-        .controls-section input, .controls-section select { padding: 12px; border: 1px solid #ddd; border-radius: 8px; flex: 1; }
+        .controls-section input, .controls-section select { padding: 12px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; flex: 1; color: var(--text-color); }
 
         /* Aree Contenuti */
         .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .area { border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        .area-header { padding: 15px; color: white; text-align: center; font-weight: 700; font-size: 1.1rem; }
-        .area-content { padding: 15px; min-height: 100px; }
+        .area { border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .area-header { padding: 15px; color: white; text-align: center; font-weight: 700; font-size: 1.1rem; display: flex; justify-content: space-between; align-items: center; }
+        .area-content { padding: 15px; min-height: 100px; transition: background 0.3s; }
         
-        #spesa-area .area-header { background: var(--spesa-header); } #spesa-area .area-content { background: var(--spesa-color); }
-        #frigo-area .area-header { background: var(--frigo-header); } #frigo-area .area-content { background: var(--frigo-color); }
-        #freezer-area .area-header { background: var(--freezer-header); } #freezer-area .area-content { background: var(--freezer-color); }
-        #dispensa-area .area-header { background: var(--dispensa-header); } #dispensa-area .area-content { background: var(--dispensa-color); }
+        .btn-recipe { background: white; color: var(--frigo-header); padding: 5px 10px; border-radius: 6px; font-size: 0.8rem; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .btn-recipe:hover { background: #f0f0f0; }
 
-        .shelf-title { font-size: 1rem; color: #555; margin: 15px 0 10px 0; padding-bottom: 5px; border-bottom: 2px solid rgba(0,0,0,0.1); font-weight: 600; }
+        #spesa-area .area-header { background: var(--spesa-header); justify-content: center;} 
+        #spesa-area .area-content { background: var(--spesa-color); }
+        #frigo-area .area-header { background: var(--frigo-header); } 
+        #frigo-area .area-content { background: var(--frigo-color); }
+        #freezer-area .area-header { background: var(--freezer-header); justify-content: center;} 
+        #freezer-area .area-content { background: var(--freezer-color); }
+        #dispensa-area .area-header { background: var(--dispensa-header); justify-content: center;} 
+        #dispensa-area .area-content { background: var(--dispensa-color); }
+
+        .shelf-title { font-size: 1rem; color: var(--text-color); opacity: 0.8; margin: 15px 0 10px 0; padding-bottom: 5px; border-bottom: 2px solid var(--input-border); font-weight: 600; }
 
         /* Card Alimenti */
-        .card { background: var(--card-bg); padding: 15px; border-radius: 10px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); gap: 15px; }
+        .card { background: var(--card-bg); padding: 15px; border-radius: 10px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); gap: 15px; transition: background 0.3s; }
         .card-info { display: flex; align-items: center; gap: 12px; flex: 1; }
         .card-icon { font-size: 1.8rem; }
         .card-details h4 { margin: 0 0 5px 0; font-size: 1.05rem; line-height: 1.2; }
         
         .qty-controls { display: flex; align-items: center; gap: 10px; }
-        .btn-qty { padding: 0; width: 30px; height: 30px; border-radius: 6px; background: #f0f0f0; color: #333; font-size: 1.2rem; }
-        .qty-text { font-size: 0.9rem; font-weight: 600; color: #444; }
+        .btn-qty { padding: 0; width: 30px; height: 30px; border-radius: 6px; background: var(--input-bg); border: 1px solid var(--input-border); color: var(--text-color); font-size: 1.2rem; }
+        .qty-text { font-size: 0.9rem; font-weight: 600; opacity: 0.9; }
         
         .card-meta { display: flex; align-items: center; gap: 10px; justify-content: flex-end; }
-        .card-date { font-size: 0.85rem; font-weight: 600; padding: 6px 10px; border-radius: 6px; background: #f0f0f0; display: flex; align-items: center; gap: 5px; white-space: nowrap; }
-        .date-danger { background: var(--danger); color: white; }
-        .date-warning { background: var(--warning); color: white; }
+        .card-date { font-size: 0.85rem; font-weight: 600; padding: 6px 10px; border-radius: 6px; background: var(--input-bg); border: 1px solid var(--input-border); display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+        .date-danger { background: var(--danger); color: white; border:none; }
+        .date-warning { background: var(--warning); color: white; border:none; }
         
         .btn-action-icon { background: none; border: none; font-size: 1.4rem; cursor: pointer; padding: 5px; }
         .c-delete { color: var(--danger); } .c-check { color: var(--success); } .c-move { color: var(--info); }
         
-        .inline-date-picker { display: flex; align-items: center; gap: 8px; background: #f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #ddd; width: 100%; flex-wrap: wrap; }
+        .inline-date-picker { display: flex; align-items: center; gap: 8px; background: var(--card-bg); padding: 10px; border-radius: 8px; border: 1px solid var(--input-border); width: 100%; flex-wrap: wrap; }
         .inline-date-picker select, .inline-date-picker input { flex: 1; min-width: 120px; padding: 8px; }
-        .inline-date-picker button { padding: 8px 12px; }
 
         @media (max-width: 768px) {
             body { padding: 15px 15px 100px 15px; }
@@ -113,7 +130,7 @@
             .dashboard-grid { grid-template-columns: 1fr; }
             .card { flex-direction: column; align-items: stretch; }
             .card-info { margin-bottom: 5px; }
-            .card-meta { justify-content: space-between; width: 100%; border-top: 1px solid #eee; padding-top: 12px; margin-top: 5px; }
+            .card-meta { justify-content: space-between; width: 100%; border-top: 1px solid var(--input-border); padding-top: 12px; margin-top: 5px; }
             .inline-date-picker { flex-direction: column; align-items: stretch; }
             .inline-date-picker select, .inline-date-picker input { width: 100%; }
             .inline-date-picker button { width: 100%; margin-top: 5px; }
@@ -124,11 +141,11 @@
         .tools-section input[type="file"] { display: none; }
 
         @media print {
-            .bottom-nav, .form-section, .controls-section, .tools-section, .btn-action-icon, .btn-qty { display: none !important; }
-            body { padding: 0; background: #fff; }
+            .bottom-nav, .form-section, .controls-section, .tools-section, .btn-action-icon, .btn-qty, .theme-toggle, .btn-recipe { display: none !important; }
+            body { padding: 0; background: #fff !important; color: #000 !important; }
             .view { display: block !important; } 
             .area { border: 1px solid #ddd; box-shadow: none; break-inside: avoid; }
-            .area-content { background: #fff !important; }
+            .area-content, .card { background: #fff !important; color: #000 !important; }
             .card { box-shadow: none; border-bottom: 1px solid #eee; border-radius: 0; padding: 10px 0; }
         }
     </style>
@@ -142,7 +159,10 @@
 </nav>
 
 <div class="container">
-    <header><h1>Gestione Casa</h1></header>
+    <header>
+        <h1>Gestione Casa</h1>
+        <button class="theme-toggle" onclick="toggleTheme()" id="theme-icon">🌙</button>
+    </header>
 
     <div class="form-section">
         <div class="mode-switch">
@@ -204,15 +224,24 @@
 
     <div id="view-frigo" class="view active">
         <div class="dashboard-grid">
-            <div class="area" id="frigo-area"><div class="area-header">Il tuo Frigorifero</div><div class="area-content" id="frigo-list"></div></div>
-            <div class="area" id="freezer-area"><div class="area-header">Il tuo Freezer</div><div class="area-content" id="freezer-list"></div></div>
+            <div class="area" id="frigo-area">
+                <div class="area-header">
+                    <span>Il tuo Frigorifero</span>
+                    <button class="btn-recipe" onclick="cercaRicetteSvuotaFrigo()">👨‍🍳 Ricette</button>
+                </div>
+                <div class="area-content" id="frigo-list"></div>
+            </div>
+            <div class="area" id="freezer-area">
+                <div class="area-header"><span>Il tuo Freezer</span></div>
+                <div class="area-content" id="freezer-list"></div>
+            </div>
         </div>
     </div>
     <div id="view-dispensa" class="view">
-        <div class="area" id="dispensa-area"><div class="area-header">🥫 La tua Dispensa</div><div class="area-content" id="dispensa-list"></div></div>
+        <div class="area" id="dispensa-area"><div class="area-header"><span>🥫 La tua Dispensa</span></div><div class="area-content" id="dispensa-list"></div></div>
     </div>
     <div id="view-spesa" class="view">
-        <div class="area" id="spesa-area"><div class="area-header">🛒 Lista della Spesa</div><div class="area-content" id="spesa-list"></div></div>
+        <div class="area" id="spesa-area"><div class="area-header"><span>🛒 Lista della Spesa</span></div><div class="area-content" id="spesa-list"></div></div>
     </div>
 
     <div class="tools-section">
@@ -227,11 +256,28 @@
 <script>
     let inventory = JSON.parse(localStorage.getItem('fridgeData')) || [];
     let shoppingList = JSON.parse(localStorage.getItem('shoppingData')) || [];
-    let inputMode = 'single'; // single o bulk
+    let inputMode = 'single'; 
 
     const catFrigo = { 'carne': '🍗 Carne/Pesce', 'verdura': '🥦 Verdura/Frutta', 'latticini': '🧀 Latticini/Uova', 'pronti': '🍲 Pronti', 'altro_f': '📦 Altro' };
     const catDispensa = { 'pasta': '🍝 Pasta/Riso/Cereali', 'scatolette': '🥫 Scatolette/Conserve', 'condimenti': '🧂 Olio/Sale/Condimenti', 'colazione': '🍪 Biscotti/Colazione', 'bevande': '🧃 Bevande', 'altro_d': '📦 Altro' };
     const icons = { 'carne': '🍗', 'verdura': '🥦', 'latticini': '🧀', 'pronti': '🍲', 'altro_f': '📦', 'pasta': '🍝', 'scatolette': '🥫', 'condimenti': '🧂', 'colazione': '🍪', 'bevande': '🧃', 'altro_d': '📦' };
+
+    // --- TEMA SCURO ---
+    function toggleTheme() {
+        const html = document.documentElement;
+        const currentTheme = html.getAttribute('data-theme');
+        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+        html.setAttribute('data-theme', newTheme);
+        document.getElementById('theme-icon').innerText = newTheme === 'light' ? '🌙' : '☀️';
+        document.getElementById('meta-theme-color').setAttribute("content", newTheme === 'light' ? '#4caf50' : '#121212');
+        localStorage.setItem('appTheme', newTheme);
+    }
+    // Carica preferenza tema all'avvio
+    const savedTheme = localStorage.getItem('appTheme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    document.getElementById('theme-icon').innerText = savedTheme === 'light' ? '🌙' : '☀️';
+    document.getElementById('meta-theme-color').setAttribute("content", savedTheme === 'light' ? '#4caf50' : '#121212');
+
 
     function switchTab(tabId) {
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -257,22 +303,17 @@
         dateLabel.innerText = loc === 'frigo' ? 'Scadenza (Opz.)' : (loc === 'freezer' ? 'Congelato (Opz.)' : 'Scadenza (Opz.)');
     }
 
-    // --- GESTIONE MODALITA' (Singolo / Multiplo) ---
     function setMode(mode) {
         inputMode = mode;
         document.getElementById('btn-single').classList.toggle('active', mode === 'single');
         document.getElementById('btn-bulk').classList.toggle('active', mode === 'bulk');
-        
         document.querySelectorAll('.single-only').forEach(el => el.style.display = mode === 'single' ? 'flex' : 'none');
         document.getElementById('bulk-group').style.display = mode === 'bulk' ? 'flex' : 'none';
     }
 
-    // --- DETTATURA VOCALE (Speech Recognition) ---
     function startDictation() {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) {
-            return alert("Il tuo browser non supporta la dettatura vocale. Usa Chrome o Safari aggiornati!");
-        }
+        if (!SpeechRecognition) return alert("Il browser non supporta la dettatura vocale.");
         
         const recognition = new SpeechRecognition();
         recognition.lang = 'it-IT';
@@ -285,21 +326,13 @@
         recognition.onresult = function(event) {
             const transcript = event.results[0][0].transcript;
             const bulkBox = document.getElementById('bulkText');
-            // Aggiungiamo il testo trascritto, separato da virgola se c'era già qualcosa
             bulkBox.value += (bulkBox.value ? ', ' : '') + transcript;
         };
-
         recognition.onerror = function(event) { alert("Errore microfono: " + event.error); };
-        
-        recognition.onend = function() {
-            micBtn.classList.remove('listening');
-            micBtn.innerText = '🎙️ Avvia Dettatura';
-        };
-
+        recognition.onend = function() { micBtn.classList.remove('listening'); micBtn.innerText = '🎙️ Avvia Dettatura'; };
         recognition.start();
     }
 
-    // --- ELABORAZIONE INSERIMENTO ---
     function processAdd(target) {
         const location = document.getElementById('location').value;
         const category = document.getElementById('category').value;
@@ -312,37 +345,23 @@
             if(!name || isNaN(qty)) return alert("Compila Nome e Quantità!");
             executeAdd(name, qty, unit, location, category, date, target);
         } else {
-            // Modalità Multipla: Analizziamo il testo
             const bulkText = document.getElementById('bulkText').value;
-            // Separiamo per "a capo" o "virgola" o la parola " e "
             let lines = bulkText.replace(/ e /gi, ',').split(/[\n,]+/);
-            
             let addedCount = 0;
             lines.forEach(line => {
                 let text = line.trim();
                 if(!text) return;
-                
-                let qty = 1;
-                let itemName = text;
-                
-                // Cerca se la riga inizia o finisce con un numero (es "2 Latte" o "Latte 2")
+                let qty = 1; let itemName = text;
                 const matchStart = text.match(/^(\d+)\s+(.+)$/);
                 const matchEnd = text.match(/^(.+)\s+(\d+)$/);
-                
                 if (matchStart) { qty = parseInt(matchStart[1]); itemName = matchStart[2]; }
                 else if (matchEnd) { qty = parseInt(matchEnd[2]); itemName = matchEnd[1]; }
-
-                // Capitalizza la prima lettera
                 itemName = itemName.charAt(0).toUpperCase() + itemName.slice(1);
-                
                 executeAdd(itemName, qty, "", location, category, date, target);
                 addedCount++;
             });
-            
             if(addedCount === 0) return alert("Inserisci almeno un alimento!");
         }
-        
-        // Reset campi
         document.getElementById('name').value = '';
         document.getElementById('qty').value = '1';
         document.getElementById('bulkText').value = '';
@@ -355,7 +374,51 @@
         else { shoppingList.push(newItem); saveShoppingData(); }
     }
 
-    // --- FUNZIONI CARTE E AZIONI (Uguali a prima) ---
+    // --- RICETTE SVUOTA FRIGO ---
+    function cercaRicetteSvuotaFrigo() {
+        const today = new Date(); today.setHours(0,0,0,0);
+        const inScadenza = inventory.filter(item => {
+            if(item.location !== 'frigo' || !item.date) return false;
+            const diffDays = Math.ceil((new Date(item.date) - today) / (1000 * 60 * 60 * 24));
+            return diffDays <= 2; // Scaduti (<0) o in scadenza vicina (0-2 gg)
+        });
+
+        if(inScadenza.length === 0) {
+            alert("Ottima notizia! Non hai alimenti in scadenza urgente nel frigo. 🎉");
+            return;
+        }
+
+        const ingredienti = inScadenza.map(i => i.name).join(' e ');
+        const url = `https://www.google.com/search?q=ricette+con+${encodeURIComponent(ingredienti)}`;
+        window.open(url, '_blank'); // Apre Google in una nuova scheda
+    }
+
+    // --- CICLO AUTO-SPESA ---
+    function changeQty(id, delta) {
+        const item = inventory.find(i => i.id === id);
+        if(item) {
+            let numericQty = Number(item.qty);
+            if(isNaN(numericQty)) return alert("Elimina e riaggiungi per usare questa funzione!");
+            item.qty = numericQty + delta;
+            
+            if(item.qty <= 0) {
+                if(confirm(`Hai finito ${item.name}! Vuoi aggiungerlo alla Lista della Spesa?`)) {
+                    // Sposta in spesa
+                    inventory = inventory.filter(i => i.id !== id);
+                    item.qty = 1; // Resetta quantità per la spesa
+                    item.date = ''; // Rimuove la vecchia scadenza
+                    shoppingList.push(item);
+                    saveData(); saveShoppingData(); render();
+                } else {
+                    deleteItem(id);
+                }
+            } else { 
+                saveData(); render(); 
+            }
+        }
+    }
+
+
     function deleteShoppingItem(id) { shoppingList = shoppingList.filter(item => item.id !== id); saveShoppingData(); render(); }
 
     function askDateForBoughtItem(id) {
@@ -414,16 +477,6 @@
     }
 
     function deleteItem(id) { inventory = inventory.filter(item => item.id !== id); saveData(); render(); }
-
-    function changeQty(id, delta) {
-        const item = inventory.find(i => i.id === id);
-        if(item) {
-            let numericQty = Number(item.qty);
-            if(isNaN(numericQty)) return alert("Elimina e riaggiungi per usare questa funzione!");
-            item.qty = numericQty + delta;
-            if(item.qty <= 0) deleteItem(id); else { saveData(); render(); }
-        }
-    }
 
     function saveData() { localStorage.setItem('fridgeData', JSON.stringify(inventory)); }
     function saveShoppingData() { localStorage.setItem('shoppingData', JSON.stringify(shoppingList)); }
@@ -498,7 +551,7 @@
         for (const [key, name] of Object.entries(catDispensa)) {
             if (dispensaShelves[key] !== '') dispensaHTML += `<div class="shelf-title">${name}</div>${dispensaShelves[key]}`;
         }
-        document.getElementById('dispensa-list').innerHTML = dispensaHTML || '<p style="text-align:center; color:#888;">Dispensa vuota!</p>';
+        document.getElementById('dispensa-list').innerHTML = dispensaHTML || '<p style="text-align:center; color:var(--text-color); opacity:0.7;">Dispensa vuota!</p>';
     }
 
     function exportJSON() {
