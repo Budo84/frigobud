@@ -305,7 +305,9 @@
         const loc = document.getElementById('location').value;
         const catSelect = document.getElementById('category');
         const dateLabel = document.getElementById('dateLabel');
-        catSelect.innerHTML = '';
+        
+        // 1. Aggiungiamo l'opzione "Automatica" sempre in cima!
+        catSelect.innerHTML = '<option value="auto" style="font-weight:bold; color:var(--info);">🤖 Assegna in automatico</option>';
         
         let targetDict = (loc === 'dispensa') ? {...catDispensa, ...customCategories.dispensa} : {...catFrigo, ...customCategories.frigo};
         for (const [key, value] of Object.entries(targetDict)) {
@@ -385,7 +387,7 @@
         localStorage.setItem('userMemory', JSON.stringify(userMemory));
     }
 
-    function parseSmartItem(rawText) {
+    function parseSmartItem(rawText, defaultLoc) {
         let text = rawText.trim().toLowerCase();
         let isGF = false;
 
@@ -415,7 +417,7 @@
         }
 
         let finalCategory = document.getElementById('category').value; 
-        let finalLocation = document.getElementById('location').value;
+        let finalLocation = defaultLoc || document.getElementById('location').value;
         let memoryFound = false;
 
         if (userMemory[name]) {
@@ -462,10 +464,30 @@
             }
         }
 
+        // Se dopo tutti i tentativi la categoria è rimasta su 'auto', assegnamo un fallback generico
+        if (finalCategory === 'auto') {
+            finalCategory = (finalLocation === 'dispensa') ? 'altro_d' : 'altro_f';
+        }
+
         name = name.charAt(0).toUpperCase() + name.slice(1);
         if (isGF) name += ' <span class="tag-sg">🌾(SG)</span>';
 
         return { name, qty, unit, category: finalCategory, location: finalLocation };
+    }
+
+    // --- NUOVO: SISTEMA ANTI-DOPPIONI CENTRALE ---
+    function findDuplicate(list, searchName, searchLoc, searchDate, searchUnit) {
+        // Pulisce il nome da tag HTML e spazi per renderlo universale
+        let cleanName = searchName.trim().toLowerCase().replace(/\s+/g, ' ');
+        let cleanDate = (searchDate || '').trim();
+        let cleanUnit = (searchUnit || '').trim().toLowerCase();
+
+        return list.find(i => 
+            i.name.trim().toLowerCase().replace(/\s+/g, ' ') === cleanName &&
+            i.location === searchLoc &&
+            (i.date || '').trim() === cleanDate &&
+            (i.unit || '').trim().toLowerCase() === cleanUnit
+        );
     }
 
     function processAdd(target) {
@@ -473,20 +495,35 @@
         const baseDate = document.getElementById('date').value;
 
         if (inputMode === 'single') {
-            const rawName = document.getElementById('name').value.trim();
+            let rawName = document.getElementById('name').value.trim();
             const qty = parseInt(document.getElementById('qty').value);
             const unit = document.getElementById('unit').value.trim();
-            const category = document.getElementById('category').value;
+            let category = document.getElementById('category').value;
             const isGFChecked = document.getElementById('isGlutenFree').checked;
 
             if(!rawName || isNaN(qty)) return alert("Compila Nome e Quantità!");
             
             let finalName = rawName;
-            if(isGFChecked || finalName.toLowerCase().includes('senza glutine') || finalName.toLowerCase().includes('gluten free')) {
-                finalName = finalName.replace(/senza glutine/gi, '').replace(/gluten free/gi, '').trim() + ' <span class="tag-sg">🌾(SG)</span>';
+            let finalLocation = baseLocation;
+
+            // Se l'utente ha lasciato la categoria in "Auto", ci pensa il cervello analitico!
+            if (category === 'auto') {
+                let textForParser = rawName;
+                if(isGFChecked && !textForParser.toLowerCase().includes('senza glutine')) textForParser += ' senza glutine';
+                
+                const parsed = parseSmartItem(textForParser, baseLocation);
+                finalName = parsed.name;
+                category = parsed.category;
+                finalLocation = parsed.location; // Il cervello sposta anche l'alimento se serve!
+            } else {
+                // Altrimenti formatta semplicemente il nome in modo corretto
+                finalName = finalName.charAt(0).toUpperCase() + finalName.slice(1);
+                if(isGFChecked || finalName.toLowerCase().includes('senza glutine') || finalName.toLowerCase().includes('gluten free')) {
+                    finalName = finalName.replace(/senza glutine/gi, '').replace(/gluten free/gi, '').trim() + ' <span class="tag-sg">🌾(SG)</span>';
+                }
             }
             
-            executeAdd(finalName, qty, unit, baseLocation, category, baseDate, target);
+            executeAdd(finalName, qty, unit, finalLocation, category, baseDate, target);
         } else {
             const bulkText = document.getElementById('bulkText').value;
             let lines = bulkText.replace(/ e /gi, ',').split(/[\n,]+/);
@@ -494,7 +531,7 @@
             
             lines.forEach(line => {
                 if(!line.trim()) return;
-                const parsed = parseSmartItem(line); 
+                const parsed = parseSmartItem(line, baseLocation); 
                 executeAdd(parsed.name, parsed.qty, parsed.unit, parsed.location, parsed.category, baseDate, target);
                 addedCount++;
             });
@@ -509,28 +546,22 @@
         render();
     }
 
-    // --- AGGIUNTO IL SISTEMA ANTI-DOPPIONI QUI ---
     function executeAdd(name, qty, unit, location, category, date, target) {
         learnPreference(name, location, category);
         let targetList = target === 'inventory' ? inventory : shoppingList;
-        let d = date || '';
-        let u = unit || '';
         
-        // Controlla se esiste un doppione (stesso nome, luogo, data e unità)
-        let existingItem = targetList.find(i => 
-            i.name.trim().toLowerCase() === name.trim().toLowerCase() &&
-            i.location === location &&
-            i.date === d &&
-            (i.unit || '').trim().toLowerCase() === u.trim().toLowerCase()
-        );
+        // Verifica se esiste già un doppione esatto
+        let existingItem = findDuplicate(targetList, name, location, date, unit);
 
         if (existingItem) {
+            // Se esiste, somma le quantità invece di creare una nuova riga!
             existingItem.qty = Number(existingItem.qty) + Number(qty);
         } else {
-            const newItem = { id: Date.now() + Math.random(), name, qty: Number(qty), unit: u, location, category, date: d };
+            // Altrimenti crea l'oggetto nuovo
+            const newItem = { id: Date.now() + Math.random(), name, qty: Number(qty), unit: (unit||'').trim(), location, category, date: (date||'').trim() };
             targetList.push(newItem);
         }
-        
+
         if(target === 'inventory') { saveData(); } 
         else { saveShoppingData(); }
     }
@@ -542,10 +573,12 @@
             let newName = prompt("Modifica il nome del prodotto:", cleanNameForPrompt);
             
             if(newName && newName.trim() !== "") {
-                if(item.name.includes('(SG)')) item.name = newName.trim() + ' <span class="tag-sg">🌾(SG)</span>';
-                else item.name = newName.trim();
+                if(item.name.includes('(SG)')) {
+                    item.name = newName.trim() + ' <span class="tag-sg">🌾(SG)</span>';
+                } else {
+                    item.name = newName.trim();
+                }
                 learnPreference(item.name, item.location, item.category);
-                
                 saveData(); saveShoppingData(); render();
             }
         }
@@ -564,7 +597,6 @@
         window.open(`https://www.google.com/search?q=ricette+con+${encodeURIComponent(ingredienti)}`, '_blank'); 
     }
 
-    // --- AGGIUNTO IL SISTEMA ANTI-DOPPIONI NEL RE-INSERIMENTO SPESA ---
     function changeQty(id, delta) {
         const item = inventory.find(i => i.id === id);
         if(item) {
@@ -577,12 +609,8 @@
                 if(confirm(`Hai finito: ${cleanName}!\nVuoi aggiungerlo alla Lista della Spesa?`)) {
                     inventory = inventory.filter(i => i.id !== id);
                     
-                    let existingSpesa = shoppingList.find(i => 
-                        i.name.trim().toLowerCase() === item.name.trim().toLowerCase() &&
-                        i.location === item.location &&
-                        (i.unit || '').trim().toLowerCase() === (item.unit || '').trim().toLowerCase()
-                    );
-
+                    // Controlla se è già in lista spesa per evitare doppioni
+                    let existingSpesa = findDuplicate(shoppingList, item.name, item.location, '', item.unit);
                     if (existingSpesa) {
                         existingSpesa.qty = Number(existingSpesa.qty) + 1;
                     } else {
@@ -617,30 +645,27 @@
         `;
     }
     
-    // --- AGGIUNTO IL SISTEMA ANTI-DOPPIONI NELLO SPOSTAMENTO SPESA->CASA ---
     function confirmPurchase(id) {
         const dateVal = document.getElementById(`buy-date-${id}`).value || '';
         const locVal = document.getElementById(`buy-loc-${id}`).value;
         const itemIndex = shoppingList.findIndex(i => i.id === id);
+        
         if(itemIndex > -1) {
             const item = shoppingList[itemIndex];
-            item.date = dateVal; item.location = locVal;
+            
             const allDispensa = {...catDispensa, ...customCategories.dispensa};
             const allFrigo = {...catFrigo, ...customCategories.frigo};
             if (locVal === 'dispensa' && !allDispensa[item.category]) item.category = 'altro_d';
             if (locVal !== 'dispensa' && !allFrigo[item.category]) item.category = 'altro_f';
-            learnPreference(item.name, item.location, item.category);
+            
+            learnPreference(item.name, locVal, item.category);
 
-            let existingItem = inventory.find(i => 
-                i.name.trim().toLowerCase() === item.name.trim().toLowerCase() &&
-                i.location === item.location &&
-                i.date === item.date &&
-                (i.unit || '').trim().toLowerCase() === (item.unit || '').trim().toLowerCase()
-            );
-
+            // Verifica se esiste già per non creare doppioni in frigo/dispensa
+            let existingItem = findDuplicate(inventory, item.name, locVal, dateVal, item.unit);
             if (existingItem) {
                 existingItem.qty = Number(existingItem.qty) + Number(item.qty);
             } else {
+                item.location = locVal; item.date = dateVal;
                 inventory.push(item); 
             }
 
@@ -659,7 +684,6 @@
         `;
     }
     
-    // --- AGGIUNTO IL SISTEMA ANTI-DOPPIONI NELLO SPOSTAMENTO FRIGO<->FREEZER ---
     function confirmMove(id) {
         const dateVal = document.getElementById(`move-date-${id}`).value || '';
         const locVal = document.getElementById(`move-loc-${id}`).value;
@@ -667,26 +691,27 @@
         if(itemIndex > -1) {
             const item = inventory[itemIndex];
             
-            let existingItem = inventory.find(i => 
-                i.id !== item.id &&
-                i.name.trim().toLowerCase() === item.name.trim().toLowerCase() &&
-                i.location === locVal &&
-                i.date === dateVal &&
-                (i.unit || '').trim().toLowerCase() === (item.unit || '').trim().toLowerCase()
-            );
-
+            // Lo tolgo temporaneamente per cercare eventuali doppioni nella nuova posizione
+            inventory.splice(itemIndex, 1);
+            
+            let existingItem = findDuplicate(inventory, item.name, locVal, dateVal, item.unit);
+            
             if (existingItem) {
+                // Si fonde con l'alimento già presente
                 existingItem.qty = Number(existingItem.qty) + Number(item.qty);
-                inventory.splice(itemIndex, 1);
+                learnPreference(item.name, locVal, existingItem.category);
             } else {
+                // Lo rimette come nuovo nella nuova posizione
                 item.location = locVal; item.date = dateVal;
                 const allDispensa = {...catDispensa, ...customCategories.dispensa};
                 const allFrigo = {...catFrigo, ...customCategories.frigo};
                 if (locVal === 'dispensa' && !allDispensa[item.category]) item.category = 'altro_d';
                 if (locVal !== 'dispensa' && !allFrigo[item.category]) item.category = 'altro_f';
+                
+                inventory.push(item);
+                learnPreference(item.name, locVal, item.category);
             }
             
-            learnPreference(item.name, locVal, existingItem ? existingItem.category : item.category);
             saveData(); render();
         }
     }
@@ -799,7 +824,7 @@
                     if(data.userMemory) { userMemory = data.userMemory; localStorage.setItem('userMemory', JSON.stringify(userMemory)); }
                 } 
                 else if (Array.isArray(data)) { inventory = data; shoppingList = []; }
-                saveData(); saveShoppingData(); updateFormCategories(); render(); alert("Importato!"); 
+                saveData(); saveShoppingData(); updateFormCategories(); render(); alert("Importato con successo!"); 
             } catch (err) { alert("Errore JSON."); }
         }; reader.readAsText(file);
     }
