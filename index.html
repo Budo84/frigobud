@@ -112,8 +112,8 @@
         .date-danger { background: var(--danger); color: white; border:none; }
         .date-warning { background: var(--warning); color: white; border:none; }
         
-        .btn-action-icon { background: none; border: none; font-size: 1.4rem; cursor: pointer; padding: 5px; }
-        .c-delete { color: var(--danger); } .c-check { color: var(--success); } .c-move { color: var(--info); }
+        .btn-action-icon { background: none; border: none; font-size: 1.3rem; cursor: pointer; padding: 5px; }
+        .c-delete { color: var(--danger); } .c-check { color: var(--success); } .c-move { color: var(--info); } .c-edit { color: #f39c12; }
         
         .inline-date-picker { display: flex; align-items: center; gap: 8px; background: var(--card-bg); padding: 10px; border-radius: 8px; border: 1px solid var(--input-border); width: 100%; flex-wrap: wrap; }
         .inline-date-picker select, .inline-date-picker input { flex: 1; min-width: 120px; padding: 8px; }
@@ -203,7 +203,7 @@
             </div>
             <div class="form-group single-only">
                 <label id="categoryLabel">Categoria / Ripiano</label>
-                <select id="category"></select>
+                <select id="category" onchange="checkNewCategory()"></select>
             </div>
             <div class="form-group">
                 <label id="dateLabel">Data (Opzionale)</label>
@@ -256,13 +256,14 @@
 <script>
     let inventory = JSON.parse(localStorage.getItem('fridgeData')) || [];
     let shoppingList = JSON.parse(localStorage.getItem('shoppingData')) || [];
+    // Novità: Salvataggio categorie personalizzate
+    let customCategories = JSON.parse(localStorage.getItem('customCategories')) || { frigo: {}, dispensa: {} };
     let inputMode = 'single'; 
 
     const catFrigo = { 'carne': '🍗 Carne/Pesce', 'verdura': '🥦 Verdura/Frutta', 'latticini': '🧀 Latticini/Uova', 'pronti': '🍲 Pronti', 'altro_f': '📦 Altro' };
     const catDispensa = { 'pasta': '🍝 Pasta/Riso/Cereali', 'scatolette': '🥫 Scatolette/Conserve', 'condimenti': '🧂 Olio/Sale/Condimenti', 'colazione': '🍪 Biscotti/Colazione', 'bevande': '🧃 Bevande', 'altro_d': '📦 Altro' };
     const icons = { 'carne': '🍗', 'verdura': '🥦', 'latticini': '🧀', 'pronti': '🍲', 'altro_f': '📦', 'pasta': '🍝', 'scatolette': '🥫', 'condimenti': '🧂', 'colazione': '🍪', 'bevande': '🧃', 'altro_d': '📦' };
 
-    // --- DIZIONARI PER IL CERVELLO ANALITICO ---
     const numberWords = { 'un':1, 'uno':1, 'una':1, 'due':2, 'tre':3, 'quattro':4, 'cinque':5, 'sei':6, 'sette':7, 'otto':8, 'nove':9, 'dieci':10 };
 
     const freezerKeywords = [
@@ -308,17 +309,47 @@
         updateFormCategories();
     }
 
+    // --- AGGIORNAMENTO MENU CATEGORIE (Include le custom) ---
     function updateFormCategories() {
         const loc = document.getElementById('location').value;
         const catSelect = document.getElementById('category');
         const dateLabel = document.getElementById('dateLabel');
         catSelect.innerHTML = '';
         
-        let targetDict = (loc === 'dispensa') ? catDispensa : catFrigo;
+        // Unisce le categorie base con quelle create dall'utente
+        let targetDict = (loc === 'dispensa') 
+            ? {...catDispensa, ...customCategories.dispensa} 
+            : {...catFrigo, ...customCategories.frigo};
+
         for (const [key, value] of Object.entries(targetDict)) {
             catSelect.innerHTML += `<option value="${key}">${value}</option>`;
         }
+        
+        // Aggiunge la voce per creare nuove categorie
+        catSelect.innerHTML += `<option value="add_new" style="font-weight:bold; color:var(--frigo-header);">➕ Crea Nuova Categoria...</option>`;
+
         dateLabel.innerText = loc === 'frigo' ? 'Scadenza (Opz.)' : (loc === 'freezer' ? 'Congelato (Opz.)' : 'Scadenza (Opz.)');
+    }
+
+    // --- CREAZIONE NUOVA CATEGORIA ---
+    function checkNewCategory() {
+        const catSelect = document.getElementById('category');
+        if(catSelect.value === 'add_new') {
+            const newCatName = prompt("Nome della nuova categoria (es. 🍷 Vini / 👶 Pappa Bimbi):");
+            if(newCatName && newCatName.trim() !== "") {
+                const loc = document.getElementById('location').value;
+                const catKey = 'custom_' + Date.now(); // Crea un ID univoco
+                
+                if(loc === 'dispensa') customCategories.dispensa[catKey] = newCatName.trim();
+                else customCategories.frigo[catKey] = newCatName.trim();
+                
+                localStorage.setItem('customCategories', JSON.stringify(customCategories));
+                updateFormCategories(); // Ricarica la tendina
+                catSelect.value = catKey; // Seleziona quella appena creata
+            } else {
+                updateFormCategories(); // Resetta se l'utente annulla
+            }
+        }
     }
 
     function setMode(mode) {
@@ -351,7 +382,6 @@
         recognition.start();
     }
 
-    // --- IL CERVELLO ANALITICO ---
     function parseSmartItem(rawText) {
         let text = rawText.trim().toLowerCase();
         let isGF = false;
@@ -416,13 +446,12 @@
             const qty = parseInt(document.getElementById('qty').value);
             const unit = document.getElementById('unit').value.trim();
             const category = document.getElementById('category').value;
-            const isGFChecked = document.getElementById('isGlutenFree').checked; // Legge il checkbox
+            const isGFChecked = document.getElementById('isGlutenFree').checked;
 
             if(!rawName || isNaN(qty)) return alert("Compila Nome e Quantità!");
             
             let finalName = rawName;
             
-            // Applica il controllo senza glutine (sia dalla spunta che dal testo)
             if(isGFChecked || finalName.toLowerCase().includes('senza glutine') || finalName.toLowerCase().includes('gluten free')) {
                 finalName = finalName.replace(/senza glutine/gi, '').replace(/gluten free/gi, '').trim() + ' <span class="tag-sg">🌾(SG)</span>';
             }
@@ -442,7 +471,6 @@
             if(addedCount === 0) return alert("Inserisci almeno un alimento!");
         }
         
-        // Reset dei campi
         document.getElementById('name').value = '';
         document.getElementById('qty').value = '1';
         document.getElementById('unit').value = '';
@@ -455,6 +483,27 @@
         const newItem = { id: Date.now() + Math.random(), name, qty, unit, location, category, date: date || '' };
         if(target === 'inventory') { inventory.push(newItem); saveData(); } 
         else { shoppingList.push(newItem); saveShoppingData(); }
+    }
+
+    // --- MODIFICA NOME PRODOTTO ---
+    function editItemName(id) {
+        // Cerca l'oggetto sia in inventario che in lista spesa
+        let item = inventory.find(i => i.id === id) || shoppingList.find(i => i.id === id);
+        if(item) {
+            // Rimuoviamo temporaneamente il tag HTML (SG) se presente per non confondere l'utente durante la modifica
+            let cleanNameForPrompt = item.name.replace(/<[^>]*>?/gm, '').trim();
+            let newName = prompt("Modifica il nome del prodotto:", cleanNameForPrompt);
+            
+            if(newName && newName.trim() !== "") {
+                // Se prima aveva il tag SG, glielo rimettiamo (a meno che non l'abbia rimosso lui a mano, ma lo rendiamo semplice)
+                if(item.name.includes('(SG)')) {
+                    item.name = newName.trim() + ' <span class="tag-sg">🌾(SG)</span>';
+                } else {
+                    item.name = newName.trim();
+                }
+                saveData(); saveShoppingData(); render();
+            }
+        }
     }
 
     function cercaRicetteSvuotaFrigo() {
@@ -497,13 +546,17 @@
     
     function askDateForBoughtItem(id) {
         const item = shoppingList.find(i => i.id === id);
+        
+        // Costruiamo la tendina per la destinazione includendo eventuali categorie custom
+        let locOptions = `
+            <option value="frigo" ${item.location === 'frigo' ? 'selected' : ''}>Frigo</option>
+            <option value="freezer" ${item.location === 'freezer' ? 'selected' : ''}>Freezer</option>
+            <option value="dispensa" ${item.location === 'dispensa' ? 'selected' : ''}>Dispensa</option>
+        `;
+
         document.getElementById(`action-${id}`).innerHTML = `
             <div class="inline-date-picker">
-                <select id="buy-loc-${id}">
-                    <option value="frigo" ${item.location === 'frigo' ? 'selected' : ''}>Frigo</option>
-                    <option value="freezer" ${item.location === 'freezer' ? 'selected' : ''}>Freezer</option>
-                    <option value="dispensa" ${item.location === 'dispensa' ? 'selected' : ''}>Dispensa</option>
-                </select>
+                <select id="buy-loc-${id}">${locOptions}</select>
                 <input type="date" id="buy-date-${id}">
                 <button style="background:var(--success); color:white; border:none; border-radius:6px;" onclick="confirmPurchase(${id})">OK</button>
             </div>
@@ -517,8 +570,14 @@
         if(itemIndex > -1) {
             const item = shoppingList[itemIndex];
             item.date = dateVal; item.location = locVal;
-            if (locVal === 'dispensa' && !catDispensa[item.category]) item.category = 'altro_d';
-            if (locVal !== 'dispensa' && !catFrigo[item.category]) item.category = 'altro_f';
+            
+            // Assicuriamoci che la categoria abbia senso se spostato, anche rispetto alle custom!
+            const allDispensa = {...catDispensa, ...customCategories.dispensa};
+            const allFrigo = {...catFrigo, ...customCategories.frigo};
+            
+            if (locVal === 'dispensa' && !allDispensa[item.category]) item.category = 'altro_d';
+            if (locVal !== 'dispensa' && !allFrigo[item.category]) item.category = 'altro_f';
+            
             inventory.push(item); shoppingList.splice(itemIndex, 1);
             saveData(); saveShoppingData(); render();
         }
@@ -539,8 +598,12 @@
         const item = inventory.find(i => i.id === id);
         if(item) {
             item.location = locVal; item.date = dateVal;
-            if (locVal === 'dispensa' && !catDispensa[item.category]) item.category = 'altro_d';
-            if (locVal !== 'dispensa' && !catFrigo[item.category]) item.category = 'altro_f';
+            
+            const allDispensa = {...catDispensa, ...customCategories.dispensa};
+            const allFrigo = {...catFrigo, ...customCategories.frigo};
+            if (locVal === 'dispensa' && !allDispensa[item.category]) item.category = 'altro_d';
+            if (locVal !== 'dispensa' && !allFrigo[item.category]) item.category = 'altro_f';
+            
             saveData(); render();
         }
     }
@@ -575,10 +638,20 @@
             </div>`;
 
         let locTag = isSpesa ? `<span style="font-size:0.75rem; color:#888;">(➡️ ${item.location})</span>` : '';
+        
+        // Aggiunto pulsante EDIT (✏️) a fianco delle altre azioni
         let actionsHTML = isSpesa ? `
-            <div><button class="btn-action-icon c-check" onclick="askDateForBoughtItem(${item.id})">✔️</button><button class="btn-action-icon c-delete" onclick="deleteShoppingItem(${item.id})">✖</button></div>
+            <div>
+                <button class="btn-action-icon c-edit" onclick="editItemName(${item.id})" title="Modifica Nome">✏️</button>
+                <button class="btn-action-icon c-check" onclick="askDateForBoughtItem(${item.id})">✔️</button>
+                <button class="btn-action-icon c-delete" onclick="deleteShoppingItem(${item.id})">✖</button>
+            </div>
         ` : `
-            <div><button class="btn-action-icon c-move" onclick="askMoveItem(${item.id})">🔄</button><button class="btn-action-icon c-delete" onclick="deleteItem(${item.id})">✖</button></div>
+            <div>
+                <button class="btn-action-icon c-edit" onclick="editItemName(${item.id})" title="Modifica Nome">✏️</button>
+                <button class="btn-action-icon c-move" onclick="askMoveItem(${item.id})">🔄</button>
+                <button class="btn-action-icon c-delete" onclick="deleteItem(${item.id})">✖</button>
+            </div>
         `;
 
         return `
@@ -593,8 +666,11 @@
 
     function render() {
         const lists = { frigo: '', freezer: '', spesa: '' };
+        
+        // Include categorie custom nella creazione dei ripiani della dispensa
+        const allDispensa = {...catDispensa, ...customCategories.dispensa};
         const dispensaShelves = {}; 
-        Object.keys(catDispensa).forEach(k => dispensaShelves[k] = '');
+        Object.keys(allDispensa).forEach(k => dispensaShelves[k] = '');
 
         const searchTerm = document.getElementById('searchBar').value.toLowerCase();
         const sortBy = document.getElementById('sortBy').value;
@@ -608,7 +684,14 @@
         filteredSpesa.forEach(item => lists.spesa += buildCardHTML(item, true));
         filteredInv.forEach(item => {
             if(item.location === 'frigo' || item.location === 'freezer') lists[item.location] += buildCardHTML(item, false);
-            else if (item.location === 'dispensa') dispensaShelves[item.category] += buildCardHTML(item, false);
+            else if (item.location === 'dispensa') {
+                // Previene errori se la categoria custom è stata cancellata o persa
+                if(dispensaShelves[item.category] !== undefined) {
+                    dispensaShelves[item.category] += buildCardHTML(item, false);
+                } else {
+                    dispensaShelves['altro_d'] += buildCardHTML(item, false);
+                }
+            }
         });
 
         document.getElementById('frigo-list').innerHTML = lists.frigo;
@@ -616,14 +699,17 @@
         document.getElementById('spesa-list').innerHTML = lists.spesa || '<p style="text-align:center; color:#888;">Niente da comprare! 🎉</p>';
         
         let dispensaHTML = '';
-        for (const [key, name] of Object.entries(catDispensa)) {
-            if (dispensaShelves[key] !== '') dispensaHTML += `<div class="shelf-title">${name}</div>${dispensaShelves[key]}`;
+        for (const [key, name] of Object.entries(allDispensa)) {
+            if (dispensaShelves[key] && dispensaShelves[key] !== '') {
+                dispensaHTML += `<div class="shelf-title">${name}</div>${dispensaShelves[key]}`;
+            }
         }
         document.getElementById('dispensa-list').innerHTML = dispensaHTML || '<p style="text-align:center; color:var(--text-color); opacity:0.7;">Dispensa vuota!</p>';
     }
 
     function exportJSON() {
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ inventory, shoppingList }));
+        // Ora includiamo anche le categorie custom nel file di backup!
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ inventory, shoppingList, customCategories }));
         const a = document.createElement('a'); a.href = dataStr; a.download = "gestione_casa_backup.json"; a.click();
     }
     function importJSON(event) {
@@ -632,9 +718,18 @@
         reader.onload = function(e) {
             try {
                 const data = JSON.parse(e.target.result);
-                if(data.inventory) { inventory = data.inventory; shoppingList = data.shoppingList || []; } 
+                if(data.inventory) { 
+                    inventory = data.inventory; 
+                    shoppingList = data.shoppingList || []; 
+                    // Carichiamo le custom categories se presenti nel backup
+                    if(data.customCategories) {
+                        customCategories = data.customCategories;
+                        localStorage.setItem('customCategories', JSON.stringify(customCategories));
+                    }
+                } 
                 else if (Array.isArray(data)) { inventory = data; shoppingList = []; }
-                saveData(); saveShoppingData(); render(); alert("Importato!"); 
+                
+                saveData(); saveShoppingData(); updateFormCategories(); render(); alert("Importato con successo!"); 
             } catch (err) { alert("Errore JSON."); }
         }; reader.readAsText(file);
     }
