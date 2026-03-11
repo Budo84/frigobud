@@ -189,7 +189,7 @@
             <div class="form-group" id="bulk-group">
                 <label>Dettatura Libera (Es: "Tre mele, pasta senza glutine")</label>
                 <textarea id="bulkText" placeholder="Incolla una lista o detta..."></textarea>
-                <p class="smart-hint">💡 L'app capisce da sola numeri, quantità, senza glutine e la categoria!</p>
+                <p class="smart-hint">💡 L'app impara da sola dove metti le cose e riconosce i numeri!</p>
                 <button class="mic-btn" id="mic-btn" onclick="startDictation()">🎙️ Avvia Dettatura</button>
             </div>
 
@@ -254,10 +254,12 @@
 </div>
 
 <script>
+    // DATI
     let inventory = JSON.parse(localStorage.getItem('fridgeData')) || [];
     let shoppingList = JSON.parse(localStorage.getItem('shoppingData')) || [];
-    // Novità: Salvataggio categorie personalizzate
     let customCategories = JSON.parse(localStorage.getItem('customCategories')) || { frigo: {}, dispensa: {} };
+    // NOVITA': Memoria Personale (L'app impara dalle tue scelte)
+    let userMemory = JSON.parse(localStorage.getItem('userMemory')) || {};
     let inputMode = 'single'; 
 
     const catFrigo = { 'carne': '🍗 Carne/Pesce', 'verdura': '🥦 Verdura/Frutta', 'latticini': '🧀 Latticini/Uova', 'pronti': '🍲 Pronti', 'altro_f': '📦 Altro' };
@@ -266,10 +268,7 @@
 
     const numberWords = { 'un':1, 'uno':1, 'una':1, 'due':2, 'tre':3, 'quattro':4, 'cinque':5, 'sei':6, 'sette':7, 'otto':8, 'nove':9, 'dieci':10 };
 
-    const freezerKeywords = [
-        'surgelat', 'findus', 'bastoncini', 'sofficini', 'gelato', 'gelati', 'ghiaccio', 
-        'minestrone', 'patatine fritte', 'pizza surgelata', 'piselli', 'spinaci in cubetti', 'cubetti'
-    ];
+    const freezerKeywords = ['surgelat', 'findus', 'bastoncini', 'sofficini', 'gelato', 'gelati', 'ghiaccio', 'minestrone', 'patatine fritte', 'pizza surgelata', 'piselli', 'spinaci', 'cubetti'];
 
     const smartCategories = {
         'pasta':'pasta', 'spaghetti':'pasta', 'penne':'pasta', 'maccheroni':'pasta', 'riso':'pasta', 'farina':'pasta', 'pane':'pasta', 'piadina':'pasta', 'pangrattato':'pasta', 'gnocchi':'pasta', 'crackers':'pasta', 'grissini':'pasta', 'taralli':'pasta',
@@ -309,45 +308,36 @@
         updateFormCategories();
     }
 
-    // --- AGGIORNAMENTO MENU CATEGORIE (Include le custom) ---
     function updateFormCategories() {
         const loc = document.getElementById('location').value;
         const catSelect = document.getElementById('category');
         const dateLabel = document.getElementById('dateLabel');
         catSelect.innerHTML = '';
         
-        // Unisce le categorie base con quelle create dall'utente
-        let targetDict = (loc === 'dispensa') 
-            ? {...catDispensa, ...customCategories.dispensa} 
-            : {...catFrigo, ...customCategories.frigo};
+        let targetDict = (loc === 'dispensa') ? {...catDispensa, ...customCategories.dispensa} : {...catFrigo, ...customCategories.frigo};
 
         for (const [key, value] of Object.entries(targetDict)) {
             catSelect.innerHTML += `<option value="${key}">${value}</option>`;
         }
-        
-        // Aggiunge la voce per creare nuove categorie
         catSelect.innerHTML += `<option value="add_new" style="font-weight:bold; color:var(--frigo-header);">➕ Crea Nuova Categoria...</option>`;
-
         dateLabel.innerText = loc === 'frigo' ? 'Scadenza (Opz.)' : (loc === 'freezer' ? 'Congelato (Opz.)' : 'Scadenza (Opz.)');
     }
 
-    // --- CREAZIONE NUOVA CATEGORIA ---
     function checkNewCategory() {
         const catSelect = document.getElementById('category');
         if(catSelect.value === 'add_new') {
             const newCatName = prompt("Nome della nuova categoria (es. 🍷 Vini / 👶 Pappa Bimbi):");
             if(newCatName && newCatName.trim() !== "") {
                 const loc = document.getElementById('location').value;
-                const catKey = 'custom_' + Date.now(); // Crea un ID univoco
-                
+                const catKey = 'custom_' + Date.now(); 
                 if(loc === 'dispensa') customCategories.dispensa[catKey] = newCatName.trim();
                 else customCategories.frigo[catKey] = newCatName.trim();
                 
                 localStorage.setItem('customCategories', JSON.stringify(customCategories));
-                updateFormCategories(); // Ricarica la tendina
-                catSelect.value = catKey; // Seleziona quella appena creata
+                updateFormCategories(); 
+                catSelect.value = catKey; 
             } else {
-                updateFormCategories(); // Resetta se l'utente annulla
+                updateFormCategories(); 
             }
         }
     }
@@ -382,6 +372,17 @@
         recognition.start();
     }
 
+    // --- FUNZIONE DI APPRENDIMENTO (La Memoria) ---
+    function learnPreference(name, loc, cat) {
+        if(!name) return;
+        // Puliamo il nome da tag HTML (come SG) per ricordarcelo liscio
+        let cleanName = name.replace(/<[^>]*>?/gm, '').replace(/🌾/g, '').replace(/\(SG\)/gi, '').trim().toLowerCase();
+        if(cleanName === "") return;
+        userMemory[cleanName] = { location: loc, category: cat };
+        localStorage.setItem('userMemory', JSON.stringify(userMemory));
+    }
+
+
     function parseSmartItem(rawText) {
         let text = rawText.trim().toLowerCase();
         let isGF = false;
@@ -400,34 +401,49 @@
         let qty = 1; let unit = ''; let name = text;
         const matchStart = text.match(/^(\d+)\s*(kg|g|litri|l|ml|pacchi|pacco|scatole|scatola|bottiglie|bottiglia|fette|fetta|confezioni|confezione|pz)?\s*(?:di\s+)?(.+)$/i);
         if (matchStart) {
-            qty = parseInt(matchStart[1]);
-            unit = matchStart[2] || '';
-            name = matchStart[3];
+            qty = parseInt(matchStart[1]); unit = matchStart[2] || ''; name = matchStart[3];
         } else {
             const matchEnd = text.match(/^(.+)\s+(\d+)$/i);
-            if(matchEnd) {
-                name = matchEnd[1];
-                qty = parseInt(matchEnd[2]);
-            }
+            if(matchEnd) { name = matchEnd[1]; qty = parseInt(matchEnd[2]); }
         }
 
         let finalCategory = document.getElementById('category').value; 
         let finalLocation = document.getElementById('location').value;
+        let memoryFound = false;
 
-        for (const [key, cat] of Object.entries(smartCategories)) {
-            if (name.includes(key)) {
-                finalCategory = cat;
-                if (['pasta', 'scatolette', 'condimenti', 'colazione', 'bevande'].includes(cat)) finalLocation = 'dispensa';
-                if (['carne', 'verdura', 'latticini', 'pronti'].includes(cat)) finalLocation = 'frigo';
-                break;
+        // 1. IL CERVELLO CERCA NEI SUOI RICORDI PERSONALI (Priorità Massima)
+        if (userMemory[name]) {
+            finalLocation = userMemory[name].location;
+            finalCategory = userMemory[name].category;
+            memoryFound = true;
+        } else {
+            // Cerca una parola chiave nei ricordi (es. se ho imparato "birra artigianale", riconosce "birra")
+            for (const [key, mem] of Object.entries(userMemory)) {
+                if (name.includes(key)) {
+                    finalLocation = mem.location;
+                    finalCategory = mem.category;
+                    memoryFound = true;
+                    break;
+                }
             }
         }
 
-        for (const word of freezerKeywords) {
-            if (name.includes(word)) {
-                finalLocation = 'freezer';
-                if(!['carne', 'verdura'].includes(finalCategory)) finalCategory = 'pronti';
-                break;
+        // 2. SE NON HA RICORDI, USA I DIZIONARI BASE
+        if (!memoryFound) {
+            for (const [key, cat] of Object.entries(smartCategories)) {
+                if (name.includes(key)) {
+                    finalCategory = cat;
+                    if (['pasta', 'scatolette', 'condimenti', 'colazione', 'bevande'].includes(cat)) finalLocation = 'dispensa';
+                    if (['carne', 'verdura', 'latticini', 'pronti'].includes(cat)) finalLocation = 'frigo';
+                    break;
+                }
+            }
+            for (const word of freezerKeywords) {
+                if (name.includes(word)) {
+                    finalLocation = 'freezer';
+                    if(!['carne', 'verdura'].includes(finalCategory)) finalCategory = 'pronti';
+                    break;
+                }
             }
         }
 
@@ -449,13 +465,10 @@
             const isGFChecked = document.getElementById('isGlutenFree').checked;
 
             if(!rawName || isNaN(qty)) return alert("Compila Nome e Quantità!");
-            
             let finalName = rawName;
-            
             if(isGFChecked || finalName.toLowerCase().includes('senza glutine') || finalName.toLowerCase().includes('gluten free')) {
                 finalName = finalName.replace(/senza glutine/gi, '').replace(/gluten free/gi, '').trim() + ' <span class="tag-sg">🌾(SG)</span>';
             }
-            
             executeAdd(finalName, qty, unit, baseLocation, category, baseDate, target);
         } else {
             const bulkText = document.getElementById('bulkText').value;
@@ -471,36 +484,35 @@
             if(addedCount === 0) return alert("Inserisci almeno un alimento!");
         }
         
-        document.getElementById('name').value = '';
-        document.getElementById('qty').value = '1';
-        document.getElementById('unit').value = '';
-        document.getElementById('bulkText').value = '';
+        document.getElementById('name').value = ''; document.getElementById('qty').value = '1';
+        document.getElementById('unit').value = ''; document.getElementById('bulkText').value = '';
         document.getElementById('isGlutenFree').checked = false; 
         render();
     }
 
     function executeAdd(name, qty, unit, location, category, date, target) {
         const newItem = { id: Date.now() + Math.random(), name, qty, unit, location, category, date: date || '' };
+        
+        // APPRENDIMENTO ATTIVO: memorizza la scelta dell'utente!
+        learnPreference(name, location, category);
+
         if(target === 'inventory') { inventory.push(newItem); saveData(); } 
         else { shoppingList.push(newItem); saveShoppingData(); }
     }
 
-    // --- MODIFICA NOME PRODOTTO ---
     function editItemName(id) {
-        // Cerca l'oggetto sia in inventario che in lista spesa
         let item = inventory.find(i => i.id === id) || shoppingList.find(i => i.id === id);
         if(item) {
-            // Rimuoviamo temporaneamente il tag HTML (SG) se presente per non confondere l'utente durante la modifica
             let cleanNameForPrompt = item.name.replace(/<[^>]*>?/gm, '').trim();
             let newName = prompt("Modifica il nome del prodotto:", cleanNameForPrompt);
             
             if(newName && newName.trim() !== "") {
-                // Se prima aveva il tag SG, glielo rimettiamo (a meno che non l'abbia rimosso lui a mano, ma lo rendiamo semplice)
-                if(item.name.includes('(SG)')) {
-                    item.name = newName.trim() + ' <span class="tag-sg">🌾(SG)</span>';
-                } else {
-                    item.name = newName.trim();
-                }
+                if(item.name.includes('(SG)')) item.name = newName.trim() + ' <span class="tag-sg">🌾(SG)</span>';
+                else item.name = newName.trim();
+                
+                // Impara anche il nuovo nome
+                learnPreference(item.name, item.location, item.category);
+
                 saveData(); saveShoppingData(); render();
             }
         }
@@ -546,14 +558,11 @@
     
     function askDateForBoughtItem(id) {
         const item = shoppingList.find(i => i.id === id);
-        
-        // Costruiamo la tendina per la destinazione includendo eventuali categorie custom
         let locOptions = `
             <option value="frigo" ${item.location === 'frigo' ? 'selected' : ''}>Frigo</option>
             <option value="freezer" ${item.location === 'freezer' ? 'selected' : ''}>Freezer</option>
             <option value="dispensa" ${item.location === 'dispensa' ? 'selected' : ''}>Dispensa</option>
         `;
-
         document.getElementById(`action-${id}`).innerHTML = `
             <div class="inline-date-picker">
                 <select id="buy-loc-${id}">${locOptions}</select>
@@ -571,13 +580,14 @@
             const item = shoppingList[itemIndex];
             item.date = dateVal; item.location = locVal;
             
-            // Assicuriamoci che la categoria abbia senso se spostato, anche rispetto alle custom!
             const allDispensa = {...catDispensa, ...customCategories.dispensa};
             const allFrigo = {...catFrigo, ...customCategories.frigo};
-            
             if (locVal === 'dispensa' && !allDispensa[item.category]) item.category = 'altro_d';
             if (locVal !== 'dispensa' && !allFrigo[item.category]) item.category = 'altro_f';
             
+            // APPRENDE ANCHE QUANDO COMPRI QUALCOSA E GLI ASSEGNI UN POSTO
+            learnPreference(item.name, item.location, item.category);
+
             inventory.push(item); shoppingList.splice(itemIndex, 1);
             saveData(); saveShoppingData(); render();
         }
@@ -604,6 +614,9 @@
             if (locVal === 'dispensa' && !allDispensa[item.category]) item.category = 'altro_d';
             if (locVal !== 'dispensa' && !allFrigo[item.category]) item.category = 'altro_f';
             
+            // APPRENDE IL NUOVO SPOSTAMENTO
+            learnPreference(item.name, item.location, item.category);
+
             saveData(); render();
         }
     }
@@ -639,7 +652,6 @@
 
         let locTag = isSpesa ? `<span style="font-size:0.75rem; color:#888;">(➡️ ${item.location})</span>` : '';
         
-        // Aggiunto pulsante EDIT (✏️) a fianco delle altre azioni
         let actionsHTML = isSpesa ? `
             <div>
                 <button class="btn-action-icon c-edit" onclick="editItemName(${item.id})" title="Modifica Nome">✏️</button>
@@ -667,7 +679,6 @@
     function render() {
         const lists = { frigo: '', freezer: '', spesa: '' };
         
-        // Include categorie custom nella creazione dei ripiani della dispensa
         const allDispensa = {...catDispensa, ...customCategories.dispensa};
         const dispensaShelves = {}; 
         Object.keys(allDispensa).forEach(k => dispensaShelves[k] = '');
@@ -685,7 +696,6 @@
         filteredInv.forEach(item => {
             if(item.location === 'frigo' || item.location === 'freezer') lists[item.location] += buildCardHTML(item, false);
             else if (item.location === 'dispensa') {
-                // Previene errori se la categoria custom è stata cancellata o persa
                 if(dispensaShelves[item.category] !== undefined) {
                     dispensaShelves[item.category] += buildCardHTML(item, false);
                 } else {
@@ -708,8 +718,8 @@
     }
 
     function exportJSON() {
-        // Ora includiamo anche le categorie custom nel file di backup!
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ inventory, shoppingList, customCategories }));
+        // Il Backup ora salva anche la Memoria dell'Intelligenza!
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ inventory, shoppingList, customCategories, userMemory }));
         const a = document.createElement('a'); a.href = dataStr; a.download = "gestione_casa_backup.json"; a.click();
     }
     function importJSON(event) {
@@ -721,10 +731,13 @@
                 if(data.inventory) { 
                     inventory = data.inventory; 
                     shoppingList = data.shoppingList || []; 
-                    // Carichiamo le custom categories se presenti nel backup
                     if(data.customCategories) {
                         customCategories = data.customCategories;
                         localStorage.setItem('customCategories', JSON.stringify(customCategories));
+                    }
+                    if(data.userMemory) {
+                        userMemory = data.userMemory;
+                        localStorage.setItem('userMemory', JSON.stringify(userMemory));
                     }
                 } 
                 else if (Array.isArray(data)) { inventory = data; shoppingList = []; }
