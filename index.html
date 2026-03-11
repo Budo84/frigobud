@@ -260,14 +260,27 @@
 
     // --- DIZIONARI PER IL CERVELLO ANALITICO ---
     const numberWords = { 'un':1, 'uno':1, 'una':1, 'due':2, 'tre':3, 'quattro':4, 'cinque':5, 'sei':6, 'sette':7, 'otto':8, 'nove':9, 'dieci':10 };
+
+    // ❄️ Parole chiave che forzano SEMPRE l'inserimento nel FREEZER
+    const freezerKeywords = [
+        'surgelat', 'findus', 'bastoncini', 'sofficini', 'gelato', 'gelati', 'ghiaccio', 
+        'minestrone', 'patatine fritte', 'pizza surgelata', 'piselli', 'spinaci in cubetti', 'cubetti'
+    ];
+
+    // 🥫 & ❄️ Dizionario Super-Esteso (Dispensa e Frigo)
     const smartCategories = {
-        'pollo':'carne', 'carne':'carne', 'pesce':'carne', 'tonno':'scatolette', 'salmone':'carne', 'hamburger':'carne',
-        'pasta':'pasta', 'riso':'pasta', 'pane':'pasta', 'farina':'pasta', 'piadina':'pasta',
-        'mela':'verdura', 'mele':'verdura', 'zucchine':'verdura', 'insalata':'verdura', 'pomodori':'verdura', 'frutta':'verdura', 'verdura':'verdura', 'patate':'verdura',
-        'latte':'latticini', 'formaggio':'latticini', 'uova':'latticini', 'burro':'latticini', 'yogurt':'latticini', 'mozzarella':'latticini',
-        'biscotti':'colazione', 'cereali':'colazione', 'cornetti':'colazione', 'caffè':'colazione', 'marmellata':'colazione', 'fette biscottate':'colazione',
-        'acqua':'bevande', 'vino':'bevande', 'birra':'bevande', 'succo':'bevande', 'cola':'bevande',
-        'olio':'condimenti', 'sale':'condimenti', 'zucchero':'condimenti', 'aceto':'condimenti', 'pepe':'condimenti'
+        // DISPENSA
+        'pasta':'pasta', 'spaghetti':'pasta', 'penne':'pasta', 'maccheroni':'pasta', 'riso':'pasta', 'farina':'pasta', 'pane':'pasta', 'piadina':'pasta', 'pangrattato':'pasta', 'gnocchi':'pasta', 'crackers':'pasta', 'grissini':'pasta', 'taralli':'pasta',
+        'tonno':'scatolette', 'sgombro':'scatolette', 'carne in scatola':'scatolette', 'simmenthal':'scatolette', 'fagioli':'scatolette', 'ceci':'scatolette', 'lenticchie':'scatolette', 'mais':'scatolette', 'pelati':'scatolette', 'passata':'scatolette', 'polpa':'scatolette', 'olive':'scatolette', 'capperi':'scatolette', 'sottaceti':'scatolette', 'pesto':'scatolette',
+        'olio':'condimenti', 'aceto':'condimenti', 'sale':'condimenti', 'pepe':'condimenti', 'zucchero':'condimenti', 'spezie':'condimenti', 'origano':'condimenti', 'basilico':'condimenti', 'rosmarino':'condimenti', 'dado':'condimenti', 'maionese':'condimenti', 'ketchup':'condimenti', 'salsa':'condimenti', 'senape':'condimenti',
+        'biscotti':'colazione', 'cereali':'colazione', 'cornetti':'colazione', 'brioche':'colazione', 'caffè':'colazione', 'marmellata':'colazione', 'fette biscottate':'colazione', 'nutella':'colazione', 'cioccolato':'colazione', 'cacao':'colazione', 'miele':'colazione', 'tè':'colazione', 'camomilla':'colazione',
+        'acqua':'bevande', 'vino':'bevande', 'birra':'bevande', 'succo':'bevande', 'cola':'bevande', 'aranciata':'bevande', 'estathè':'bevande', 'liquore':'bevande', 'spumante':'bevande',
+        
+        // FRIGO
+        'pollo':'carne', 'tacchino':'carne', 'manzo':'carne', 'maiale':'carne', 'fettine':'carne', 'macinato':'carne', 'hamburger':'carne', 'salsiccia':'carne', 'pesce':'carne', 'salmone':'carne', 'branzino':'carne', 'orata':'carne', 'prosciutto':'carne', 'salame':'carne', 'mortadella':'carne', 'pancetta':'carne', 'speck':'carne', 'bresaola':'carne', 'affettati':'carne', 'wurstel':'carne',
+        'mela':'verdura', 'mele':'verdura', 'zucchine':'verdura', 'insalata':'verdura', 'pomodori':'verdura', 'frutta':'verdura', 'verdura':'verdura', 'patate':'verdura', 'carote':'verdura', 'cipolle':'verdura', 'aglio':'verdura', 'limoni':'verdura', 'arance':'verdura', 'banane':'verdura', 'fragole':'verdura', 'pesche':'verdura', 'melanzane':'verdura', 'peperoni':'verdura', 'broccoli':'verdura', 'spinaci':'verdura',
+        'latte':'latticini', 'formaggio':'latticini', 'uova':'latticini', 'burro':'latticini', 'yogurt':'latticini', 'mozzarella':'latticini', 'parmigiano':'latticini', 'grana':'latticini', 'ricotta':'latticini', 'stracchino':'latticini', 'provola':'latticini', 'gorgonzola':'latticini', 'sottiletta':'latticini', 'mascarpone':'latticini', 'panna':'latticini',
+        'pancarrè':'pronti', 'tramezzini':'pronti', 'pasta sfoglia':'pronti', 'pasta brisée':'pronti', 'hummus':'pronti', 'zuppa':'pronti'
     };
 
 
@@ -379,17 +392,28 @@
         let finalCategory = document.getElementById('category').value; 
         let finalLocation = document.getElementById('location').value;
 
+        // Cerca prima nelle categorie standard (Frigo o Dispensa)
         for (const [key, cat] of Object.entries(smartCategories)) {
             if (name.includes(key)) {
                 finalCategory = cat;
                 // Auto-assegna la destinazione corretta se ha senso
                 if (['pasta', 'scatolette', 'condimenti', 'colazione', 'bevande'].includes(cat)) finalLocation = 'dispensa';
-                if (['carne', 'verdura', 'latticini'].includes(cat)) finalLocation = 'frigo';
+                if (['carne', 'verdura', 'latticini', 'pronti'].includes(cat)) finalLocation = 'frigo';
                 break;
             }
         }
 
-        // 5. Formattazione finale (Maiuscola e Tag)
+        // 5. Intercettatore FREEZER (Sovrascrive tutto se trova la parola magica)
+        for (const word of freezerKeywords) {
+            if (name.includes(word)) {
+                finalLocation = 'freezer';
+                // Assegna "Pronti" se non è già chiaramente carne o verdura
+                if(!['carne', 'verdura'].includes(finalCategory)) finalCategory = 'pronti';
+                break;
+            }
+        }
+
+        // 6. Formattazione finale (Maiuscola e Tag)
         name = name.charAt(0).toUpperCase() + name.slice(1);
         if (isGF) name += ' <span class="tag-sg">🌾(SG)</span>';
 
@@ -449,7 +473,7 @@
         });
 
         if(inScadenza.length === 0) return alert("Ottima notizia! Non hai alimenti in scadenza urgente nel frigo. 🎉");
-        const ingredienti = inScadenza.map(i => i.name.replace(/<[^>]*>?/gm, '')).join(' e '); // Rimuove tag HTML dal nome per la ricerca
+        const ingredienti = inScadenza.map(i => i.name.replace(/<[^>]*>?/gm, '')).join(' e '); 
         window.open(`https://www.google.com/search?q=ricette+con+${encodeURIComponent(ingredienti)}`, '_blank'); 
     }
 
@@ -461,7 +485,6 @@
             item.qty = numericQty + delta;
             
             if(item.qty <= 0) {
-                // Rimuove eventuali tag HTML dal nome per l'alert
                 const cleanName = item.name.replace(/<[^>]*>?/gm, ''); 
                 if(confirm(`Hai finito: ${cleanName}!\nVuoi aggiungerlo alla Lista della Spesa?`)) {
                     inventory = inventory.filter(i => i.id !== id);
@@ -476,7 +499,6 @@
             }
         }
     }
-
 
     function deleteShoppingItem(id) { shoppingList = shoppingList.filter(item => item.id !== id); saveShoppingData(); render(); }
     function askDateForBoughtItem(id) {
