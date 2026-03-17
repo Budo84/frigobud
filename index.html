@@ -134,9 +134,9 @@
         .modal-list { text-align: left; margin-bottom: 20px; }
         .modal-list h3 { font-size: 1.1rem; color: var(--text-color); margin-top: 15px; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 2px solid var(--input-border); }
         .modal-list p { margin: 8px 0; font-size: 0.95rem; color: var(--text-color); display: flex; justify-content: space-between;}
-        .modal-close { background: #2c3e50; color: white; width: 100%; padding: 12px; font-size: 1.1rem; border-radius: 10px; cursor: pointer; border: none; }
+        .modal-close { background: #2c3e50; color: white; width: 100%; padding: 12px; font-size: 1.1rem; border-radius: 10px; cursor: pointer; border: none; font-weight: bold; }
 
-        /* CSS Modal Fotocamera */
+        /* Modal Scanner Fotocamera */
         .scanner-container { background: var(--card-bg); width: 100%; max-width: 500px; border-radius: 15px; overflow: hidden; display: flex; flex-direction: column; }
         #reader { width: 100%; background: #000; min-height: 300px; }
         .scanner-footer { padding: 15px; display: flex; justify-content: center; background: var(--card-bg); }
@@ -435,7 +435,6 @@
         document.getElementById('bulk-group').style.display = mode === 'bulk' ? 'flex' : 'none';
     }
 
-    // --- NUOVO: LOGICA LETTORE CODICI A BARRE ---
     let html5QrcodeScanner = null;
 
     function startScanner() {
@@ -446,7 +445,7 @@
         }
         
         html5QrcodeScanner.start(
-            { facingMode: "environment" }, // Usa la fotocamera posteriore
+            { facingMode: "environment" }, 
             { fps: 10, qrbox: { width: 250, height: 150 } },
             onScanSuccess,
             (errorMessage) => { /* Ignora gli errori di frame continui */ }
@@ -469,22 +468,19 @@
     }
 
     async function onScanSuccess(decodedText, decodedResult) {
-        stopScanner(); // Ferma la fotocamera appena legge il codice
+        stopScanner(); 
         document.getElementById('name').value = "⏳ Ricerca prodotto...";
         
         try {
-            // Contatta il database mondiale OpenFoodFacts
             let response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${decodedText}.json`);
             let data = await response.json();
             
             if(data.status === 1) {
-                // Estrae il nome italiano, se manca usa quello generico
                 let prodName = data.product.product_name_it || data.product.product_name;
                 if(!prodName) prodName = "Prodotto Sconosciuto";
                 
                 document.getElementById('name').value = prodName;
                 
-                // Cerca se è un prodotto Gluten Free!
                 let labels = (data.product.labels || "").toLowerCase();
                 let allergens = (data.product.allergens || "").toLowerCase();
                 
@@ -731,6 +727,28 @@
         window.open(`https://www.google.com/search?q=ricette+con+${encodeURIComponent(ingredienti)}`, '_blank'); 
     }
 
+    // --- NUOVA FUNZIONE: GESTIONE QUANTITÀ NELLA SPESA ---
+    function changeShoppingQty(id, delta) {
+        const item = shoppingList.find(i => i.id === id);
+        if(item) {
+            let numericQty = Number(item.qty);
+            if(isNaN(numericQty)) return alert("Elimina e riaggiungi per usare questa funzione!");
+            item.qty = numericQty + delta;
+            
+            if(item.qty <= 0) {
+                const cleanName = item.name.replace(/<[^>]*>?/gm, ''); 
+                if(confirm(`Vuoi rimuovere ${cleanName} dalla lista della spesa?`)) {
+                    deleteShoppingItem(id);
+                } else {
+                    item.qty = 1; // Ripristina a 1 se l'utente annulla
+                    saveShoppingData(); render();
+                }
+            } else { 
+                saveShoppingData(); render(); 
+            }
+        }
+    }
+
     function changeQty(id, delta) {
         const item = inventory.find(i => i.id === id);
         if(item) {
@@ -881,11 +899,12 @@
             dateHTML = `<span class="${dateClass}">${prefix} ${fDate}</span>`;
         }
 
+        // --- MODIFICATO: I pulsanti ora sono sempre visibili, cambia solo la funzione chiamata ---
         let qtyHTML = isNaN(Number(item.qty)) ? `<span class="qty-text">${item.qty}</span>` : `
             <div class="qty-controls">
-                ${!isSpesa ? `<button class="btn-qty" onclick="changeQty(${item.id}, -1)">-</button>` : ''}
+                <button class="btn-qty" onclick="${isSpesa ? `changeShoppingQty(${item.id}, -1)` : `changeQty(${item.id}, -1)`}">-</button>
                 <span class="qty-text">${item.qty} ${item.unit||''}</span>
-                ${!isSpesa ? `<button class="btn-qty" onclick="changeQty(${item.id}, 1)">+</button>` : ''}
+                <button class="btn-qty" onclick="${isSpesa ? `changeShoppingQty(${item.id}, 1)` : `changeQty(${item.id}, 1)`}">+</button>
             </div>`;
 
         let locTag = isSpesa ? `<span style="font-size:0.75rem; color:#888;">(➡️ ${item.location})</span>` : '';
