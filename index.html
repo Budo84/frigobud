@@ -190,6 +190,15 @@
     </div>
 </div>
 
+<div class="modal-overlay" id="order-modal">
+    <div class="modal-content">
+        <h2 style="color: var(--text-color);">↕️ Ordina Corsie</h2>
+        <p style="font-size: 0.85rem; opacity: 0.8; margin-bottom: 15px;">Ordina le categorie in base alla disposizione del tuo supermercato.</p>
+        <div class="modal-list" id="order-list" style="max-height: 40vh; overflow-y: auto;"></div>
+        <button class="modal-close" onclick="saveOrderAndClose()" style="background: var(--info);">Salva Ordine</button>
+    </div>
+</div>
+
 <nav class="bottom-nav">
     <div class="nav-item active" onclick="switchTab('frigo')"><span class="nav-icon">❄️</span> Frigo</div>
     <div class="nav-item" onclick="switchTab('dispensa')"><span class="nav-icon">🥫</span> Dispensa</div>
@@ -290,6 +299,10 @@
                 <span>🛒 Lista della Spesa</span>
                 <button class="btn-wa" onclick="shareSpesaWhatsApp()">📲 Invia</button>
             </div>
+            <div style="padding: 15px 15px 0 15px; background: var(--spesa-color); display:flex; gap:10px;">
+                <select id="supermarket-select" onchange="changeSupermarket(this.value)" style="flex:1; padding:10px; border-radius:6px; border:1px solid var(--input-border); font-size:0.9rem; font-weight:bold;"></select>
+                <button onclick="openOrderModal()" style="background:var(--info); color:white; border:none; border-radius:6px; padding:0 15px; cursor:pointer;" title="Ordina le corsie per questo supermercato">↕️ Corsie</button>
+            </div>
             <div class="area-content" id="spesa-list"></div>
         </div>
     </div>
@@ -309,6 +322,11 @@
     let customCategories = JSON.parse(localStorage.getItem('customCategories')) || { frigo: {}, dispensa: {} };
     let userMemory = JSON.parse(localStorage.getItem('userMemory')) || {};
     let inputMode = 'single'; 
+
+    // --- NUOVE VARIABILI PER SUPERMERCATI E ORDINE CORSIE ---
+    let supermarkets = JSON.parse(localStorage.getItem('supermarkets')) || ['Generico'];
+    let currentSupermarket = localStorage.getItem('currentSupermarket') || 'Generico';
+    let categoryOrders = JSON.parse(localStorage.getItem('categoryOrders')) || { 'Generico': [] };
 
     const catFrigo = { 'carne': '🍗 Carne/Pesce', 'verdura': '🥦 Verdura/Frutta', 'latticini': '🧀 Latticini/Uova', 'pronti': '🍲 Pronti', 'altro_f': '📦 Altro' };
     const catDispensa = { 'pasta': '🍝 Pasta/Riso/Cereali', 'scatolette': '🥫 Scatolette/Conserve', 'condimenti': '🧂 Olio/Sale/Condimenti', 'colazione': '🍪 Biscotti/Colazione', 'bevande': '🧃 Bevande', 'altro_d': '📦 Altro' };
@@ -435,6 +453,89 @@
         document.getElementById('bulk-group').style.display = mode === 'bulk' ? 'flex' : 'none';
     }
 
+    // --- NUOVA LOGICA: SUPERMERCATI E CORSIE ---
+    function initSupermarketSelect() {
+        let select = document.getElementById('supermarket-select');
+        select.innerHTML = '';
+        supermarkets.forEach(s => {
+            select.innerHTML += `<option value="${s}" ${s === currentSupermarket ? 'selected' : ''}>🏪 ${s}</option>`;
+        });
+        select.innerHTML += `<option value="add_new" style="font-weight:bold; color:var(--frigo-header);">➕ Aggiungi Supermercato...</option>`;
+    }
+
+    function changeSupermarket(val) {
+        if (val === 'add_new') {
+            let newName = prompt("Nome del nuovo supermercato (es. Esselunga, Lidl):");
+            if (newName && newName.trim() !== '') {
+                newName = newName.trim();
+                if (!supermarkets.includes(newName)) {
+                    supermarkets.push(newName);
+                    // Copia l'ordine base
+                    categoryOrders[newName] = [...(categoryOrders['Generico'] || [])];
+                    localStorage.setItem('supermarkets', JSON.stringify(supermarkets));
+                    localStorage.setItem('categoryOrders', JSON.stringify(categoryOrders));
+                }
+                currentSupermarket = newName;
+            }
+        } else {
+            currentSupermarket = val;
+        }
+        localStorage.setItem('currentSupermarket', currentSupermarket);
+        initSupermarketSelect();
+        render();
+    }
+
+    function openOrderModal() {
+        const allCategories = {...catFrigo, ...catDispensa, ...customCategories.frigo, ...customCategories.dispensa};
+        let order = categoryOrders[currentSupermarket] || [];
+        
+        // Se l'utente ha aggiunto nuove categorie, le accodiamo in fondo alla lista di questo supermercato
+        let allKeys = Object.keys(allCategories);
+        allKeys.forEach(k => {
+            if(!order.includes(k)) order.push(k);
+        });
+        categoryOrders[currentSupermarket] = order;
+
+        renderOrderModalList();
+        document.getElementById('order-modal').classList.add('active');
+    }
+
+    function renderOrderModalList() {
+        const allCategories = {...catFrigo, ...catDispensa, ...customCategories.frigo, ...customCategories.dispensa, 'altro_f':'📦 Altro (Frigo)', 'altro_d':'📦 Altro (Dispensa)'};
+        let order = categoryOrders[currentSupermarket];
+        let html = '';
+        
+        order.forEach((catKey, index) => {
+            let catName = allCategories[catKey] || 'Altro';
+            html += `
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; background:var(--input-bg); margin-bottom:5px; border-radius:8px; border:1px solid var(--input-border);">
+                    <span style="font-weight:600;">${catName}</span>
+                    <div style="display:flex; gap:5px;">
+                        <button onclick="moveCategory(${index}, -1)" style="padding:6px 12px; background:var(--nav-bg); color:var(--text-color); border:1px solid var(--input-border); border-radius:6px; cursor:pointer;" ${index===0?'disabled':''}>⬆️</button>
+                        <button onclick="moveCategory(${index}, 1)" style="padding:6px 12px; background:var(--nav-bg); color:var(--text-color); border:1px solid var(--input-border); border-radius:6px; cursor:pointer;" ${index===order.length-1?'disabled':''}>⬇️</button>
+                    </div>
+                </div>
+            `;
+        });
+        document.getElementById('order-list').innerHTML = html;
+    }
+
+    function moveCategory(index, dir) {
+        let order = categoryOrders[currentSupermarket];
+        if (index + dir < 0 || index + dir >= order.length) return;
+        let temp = order[index];
+        order[index] = order[index + dir];
+        order[index + dir] = temp;
+        renderOrderModalList(); // Ridisegna la lista nel modal istantaneamente
+    }
+
+    function saveOrderAndClose() {
+        localStorage.setItem('categoryOrders', JSON.stringify(categoryOrders));
+        document.getElementById('order-modal').classList.remove('active');
+        render(); // Ridisegna la spesa con il nuovo ordine
+    }
+    // --- FINE LOGICA SUPERMERCATI ---
+
     let html5QrcodeScanner = null;
 
     function startScanner() {
@@ -498,7 +599,6 @@
             document.getElementById('name').value = "";
         }
     }
-
 
     function startDictation() {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -727,7 +827,6 @@
         window.open(`https://www.google.com/search?q=ricette+con+${encodeURIComponent(ingredienti)}`, '_blank'); 
     }
 
-    // --- NUOVA FUNZIONE: GESTIONE QUANTITÀ NELLA SPESA ---
     function changeShoppingQty(id, delta) {
         const item = shoppingList.find(i => i.id === id);
         if(item) {
@@ -740,7 +839,7 @@
                 if(confirm(`Vuoi rimuovere ${cleanName} dalla lista della spesa?`)) {
                     deleteShoppingItem(id);
                 } else {
-                    item.qty = 1; // Ripristina a 1 se l'utente annulla
+                    item.qty = 1; 
                     saveShoppingData(); render();
                 }
             } else { 
@@ -899,7 +998,6 @@
             dateHTML = `<span class="${dateClass}">${prefix} ${fDate}</span>`;
         }
 
-        // --- MODIFICATO: I pulsanti ora sono sempre visibili, cambia solo la funzione chiamata ---
         let qtyHTML = isNaN(Number(item.qty)) ? `<span class="qty-text">${item.qty}</span>` : `
             <div class="qty-controls">
                 <button class="btn-qty" onclick="${isSpesa ? `changeShoppingQty(${item.id}, -1)` : `changeQty(${item.id}, -1)`}">-</button>
@@ -936,10 +1034,12 @@
         const lists = { frigo: '', freezer: '', spesa: '' };
         const allDispensa = {...catDispensa, ...customCategories.dispensa};
         const allFrigo = {...catFrigo, ...customCategories.frigo};
+        const allCategories = {...allDispensa, ...allFrigo, 'altro_d': '📦 Altro', 'altro_f': '📦 Altro'};
         
         const dispensaShelves = {}; Object.keys(allDispensa).forEach(k => dispensaShelves[k] = '');
         const frigoShelves = {}; Object.keys(allFrigo).forEach(k => frigoShelves[k] = '');
         const freezerShelves = {}; Object.keys(allFrigo).forEach(k => freezerShelves[k] = '');
+        const spesaShelves = {}; // NUOVO: Cassetti per la spesa
 
         const searchTerm = document.getElementById('searchBar').value.toLowerCase();
         const sortBy = document.getElementById('sortBy').value;
@@ -950,7 +1050,13 @@
         const sortFn = (a, b) => (sortBy === 'name') ? a.name.localeCompare(b.name) : new Date(a.date||'2099') - new Date(b.date||'2099');
         filteredSpesa.sort(sortFn); filteredInv.sort(sortFn);
 
-        filteredSpesa.forEach(item => lists.spesa += buildCardHTML(item, true));
+        // --- NUOVO: Raggruppiamo la spesa nei cassetti ---
+        filteredSpesa.forEach(item => {
+            let cat = item.category;
+            if (spesaShelves[cat] === undefined) spesaShelves[cat] = '';
+            spesaShelves[cat] += buildCardHTML(item, true);
+        });
+
         filteredInv.forEach(item => {
             if (item.location === 'dispensa') {
                 if(dispensaShelves[item.category] !== undefined) dispensaShelves[item.category] += buildCardHTML(item, false);
@@ -984,13 +1090,38 @@
         }
         document.getElementById('dispensa-list').innerHTML = dispensaHTML || '<p style="text-align:center; color:var(--text-color); opacity:0.7;">Dispensa vuota!</p>';
 
-        document.getElementById('spesa-list').innerHTML = lists.spesa || '<p style="text-align:center; color:#888;">Niente da comprare! 🎉</p>';
+        // --- NUOVO: Rendering Spesa con Ordine Personalizzato ---
+        let spesaHTML = '';
+        let currentOrder = categoryOrders[currentSupermarket] || [];
+        
+        // 1. Stampa le categorie seguendo l'ordine salvato
+        currentOrder.forEach(catKey => {
+            if (spesaShelves[catKey] && spesaShelves[catKey] !== '') {
+                let catName = allCategories[catKey] || 'Altro';
+                spesaHTML += `<div class="shelf-title">${catName}</div>${spesaShelves[catKey]}`;
+                spesaShelves[catKey] = ''; // Svuota il cassetto per non stamparlo due volte
+            }
+        });
+
+        // 2. Stampa eventuali categorie rimaste fuori dall'ordine (es. nuove custom create al volo)
+        for (const [catKey, htmlStr] of Object.entries(spesaShelves)) {
+            if (htmlStr !== '') {
+                let catName = allCategories[catKey] || 'Altro';
+                spesaHTML += `<div class="shelf-title">${catName}</div>${htmlStr}`;
+            }
+        }
+
+        document.getElementById('spesa-list').innerHTML = spesaHTML || '<p style="text-align:center; color:#888;">Niente da comprare! 🎉</p>';
     }
 
     function exportJSON() {
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ inventory, shoppingList, customCategories, userMemory }));
+        // Aggiunti supermercati e ordini al backup
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ 
+            inventory, shoppingList, customCategories, userMemory, supermarkets, currentSupermarket, categoryOrders 
+        }));
         const a = document.createElement('a'); a.href = dataStr; a.download = "gestione_casa_backup.json"; a.click();
     }
+    
     function importJSON(event) {
         const file = event.target.files[0]; if (!file) return;
         const reader = new FileReader();
@@ -1001,9 +1132,19 @@
                     inventory = data.inventory; shoppingList = data.shoppingList || []; 
                     if(data.customCategories) { customCategories = data.customCategories; localStorage.setItem('customCategories', JSON.stringify(customCategories)); }
                     if(data.userMemory) { userMemory = data.userMemory; localStorage.setItem('userMemory', JSON.stringify(userMemory)); }
+                    
+                    // Importa i nuovi dati dei supermercati se esistono
+                    if(data.supermarkets) { supermarkets = data.supermarkets; localStorage.setItem('supermarkets', JSON.stringify(supermarkets)); }
+                    if(data.currentSupermarket) { currentSupermarket = data.currentSupermarket; localStorage.setItem('currentSupermarket', currentSupermarket); }
+                    if(data.categoryOrders) { categoryOrders = data.categoryOrders; localStorage.setItem('categoryOrders', JSON.stringify(categoryOrders)); }
                 } 
                 else if (Array.isArray(data)) { inventory = data; shoppingList = []; }
-                saveData(); saveShoppingData(); updateFormCategories(); render(); alert("Importato con successo!"); 
+                
+                saveData(); saveShoppingData(); 
+                initSupermarketSelect();
+                updateFormCategories(); 
+                render(); 
+                alert("Importato con successo!"); 
             } catch (err) { alert("Errore JSON."); }
         }; reader.readAsText(file);
     }
@@ -1066,6 +1207,8 @@
         document.getElementById('expiry-modal').classList.remove('active');
     }
 
+    // Inizializza i supermercati al caricamento
+    initSupermarketSelect();
     updateFormCategories();
     render();
     checkExpirationsOnLoad(); 
