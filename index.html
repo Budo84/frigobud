@@ -13,6 +13,9 @@
     
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
+    <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+    <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
+
     <style>
         :root {
             --bg-color: #f4f7f6; --text-color: #333;
@@ -66,7 +69,6 @@
         .form-group label { font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; opacity: 0.8; }
         .form-group input[type="text"], .form-group input[type="number"], .form-group input[type="date"], .form-group select, .form-group textarea { padding: 10px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; outline: none; transition: 0.2s; width: 100%; }
         
-        /* CSS Pulsante Scanner */
         .input-row { display: flex; gap: 8px; width: 100%; }
         .btn-scan { background: #34495e; color: white; border: none; border-radius: 8px; padding: 0 15px; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; }
 
@@ -136,10 +138,16 @@
         .modal-list p { margin: 8px 0; font-size: 0.95rem; color: var(--text-color); display: flex; justify-content: space-between;}
         .modal-close { background: #2c3e50; color: white; width: 100%; padding: 12px; font-size: 1.1rem; border-radius: 10px; cursor: pointer; border: none; font-weight: bold; }
 
-        /* Modal Scanner Fotocamera */
         .scanner-container { background: var(--card-bg); width: 100%; max-width: 500px; border-radius: 15px; overflow: hidden; display: flex; flex-direction: column; }
         #reader { width: 100%; background: #000; min-height: 300px; }
         .scanner-footer { padding: 15px; display: flex; justify-content: center; background: var(--card-bg); }
+
+        .tools-section { margin-top: 30px; text-align: center; padding: 20px; background: var(--card-bg); border-radius: 12px; }
+        .tools-section button { background: #7f8c8d; color: white; margin: 5px; display: inline-flex; font-size: 0.9rem; }
+        .tools-section input[type="file"] { display: none; }
+        
+        .btn-drive { background: #4285F4 !important; }
+        .btn-drive-sync { background: #0F9D58 !important; display: none; }
 
         @media (max-width: 768px) {
             body { padding: 15px 15px 100px 15px; }
@@ -155,10 +163,6 @@
             .inline-date-picker select, .inline-date-picker input { width: 100%; }
             .inline-date-picker button { width: 100%; margin-top: 5px; }
         }
-
-        .tools-section { margin-top: 30px; text-align: center; padding: 20px; background: var(--card-bg); border-radius: 12px; }
-        .tools-section button { background: #7f8c8d; color: white; margin: 5px; display: inline-flex; font-size: 0.9rem; }
-        .tools-section input[type="file"] { display: none; }
 
         @media print {
             .bottom-nav, .form-section, .controls-section, .tools-section, .btn-action-icon, .btn-qty, .theme-toggle, .btn-recipe { display: none !important; }
@@ -308,22 +312,34 @@
     </div>
 
     <div class="tools-section">
-        <h3>Strumenti</h3>
-        <button onclick="window.print()">📄 Salva PDF Totale</button>
-        <button onclick="exportJSON()">⬇️ Esporta Backup</button>
-        <button onclick="document.getElementById('importFile').click()">⬆️ Importa</button>
+        <h3>Sincronizzazione Cloud</h3>
+        <button id="btn-login-drive" class="btn-drive" onclick="handleAuthClick()">☁️ Connetti a Google Drive</button>
+        <button id="btn-sync-up" class="btn-drive-sync" onclick="syncToDrive()">⬆️ Salva sul Cloud</button>
+        <button id="btn-sync-down" class="btn-drive-sync" onclick="syncFromDrive()">⬇️ Scarica dal Cloud</button>
+        
+        <h3 style="margin-top: 20px;">Strumenti Locali</h3>
+        <button onclick="window.print()">📄 Salva PDF</button>
+        <button onclick="exportJSON()">⬇️ Backup Locale</button>
+        <button onclick="document.getElementById('importFile').click()">⬆️ Ripristina File</button>
         <input type="file" id="importFile" accept=".json, application/json, text/plain, */*" onchange="importJSON(event)">
     </div>
 </div>
 
 <script>
+    // --- COSTANTI GOOGLE DRIVE API ---
+    // INSERISCI QUI IL TUO CLIENT ID (generato su console.cloud.google.com)
+    const CLIENT_ID = '144278583772-ikhfs2to8mkmrmf9vs4tps5orneeh5pd.apps.googleusercontent.com';
+    const SCOPES = 'https://www.googleapis.com/auth/drive.appdata';
+    let tokenClient;
+    let gapiInited = false;
+    let gisInited = false;
+
     let inventory = JSON.parse(localStorage.getItem('fridgeData')) || [];
     let shoppingList = JSON.parse(localStorage.getItem('shoppingData')) || [];
     let customCategories = JSON.parse(localStorage.getItem('customCategories')) || { frigo: {}, dispensa: {} };
     let userMemory = JSON.parse(localStorage.getItem('userMemory')) || {};
     let inputMode = 'single'; 
 
-    // --- NUOVE VARIABILI PER SUPERMERCATI E ORDINE CORSIE ---
     let supermarkets = JSON.parse(localStorage.getItem('supermarkets')) || ['Generico'];
     let currentSupermarket = localStorage.getItem('currentSupermarket') || 'Generico';
     let categoryOrders = JSON.parse(localStorage.getItem('categoryOrders')) || { 'Generico': [] };
@@ -453,7 +469,6 @@
         document.getElementById('bulk-group').style.display = mode === 'bulk' ? 'flex' : 'none';
     }
 
-    // --- NUOVA LOGICA: SUPERMERCATI E CORSIE ---
     function initSupermarketSelect() {
         let select = document.getElementById('supermarket-select');
         select.innerHTML = '';
@@ -470,7 +485,6 @@
                 newName = newName.trim();
                 if (!supermarkets.includes(newName)) {
                     supermarkets.push(newName);
-                    // Copia l'ordine base
                     categoryOrders[newName] = [...(categoryOrders['Generico'] || [])];
                     localStorage.setItem('supermarkets', JSON.stringify(supermarkets));
                     localStorage.setItem('categoryOrders', JSON.stringify(categoryOrders));
@@ -489,7 +503,6 @@
         const allCategories = {...catFrigo, ...catDispensa, ...customCategories.frigo, ...customCategories.dispensa};
         let order = categoryOrders[currentSupermarket] || [];
         
-        // Se l'utente ha aggiunto nuove categorie, le accodiamo in fondo alla lista di questo supermercato
         let allKeys = Object.keys(allCategories);
         allKeys.forEach(k => {
             if(!order.includes(k)) order.push(k);
@@ -526,15 +539,14 @@
         let temp = order[index];
         order[index] = order[index + dir];
         order[index + dir] = temp;
-        renderOrderModalList(); // Ridisegna la lista nel modal istantaneamente
+        renderOrderModalList(); 
     }
 
     function saveOrderAndClose() {
         localStorage.setItem('categoryOrders', JSON.stringify(categoryOrders));
         document.getElementById('order-modal').classList.remove('active');
-        render(); // Ridisegna la spesa con il nuovo ordine
+        render(); 
     }
-    // --- FINE LOGICA SUPERMERCATI ---
 
     let html5QrcodeScanner = null;
 
@@ -549,7 +561,7 @@
             { facingMode: "environment" }, 
             { fps: 10, qrbox: { width: 250, height: 150 } },
             onScanSuccess,
-            (errorMessage) => { /* Ignora gli errori di frame continui */ }
+            (errorMessage) => { }
         ).catch(err => {
             alert("Impossibile accedere alla fotocamera. Verifica i permessi del browser.");
             stopScanner();
@@ -1039,7 +1051,7 @@
         const dispensaShelves = {}; Object.keys(allDispensa).forEach(k => dispensaShelves[k] = '');
         const frigoShelves = {}; Object.keys(allFrigo).forEach(k => frigoShelves[k] = '');
         const freezerShelves = {}; Object.keys(allFrigo).forEach(k => freezerShelves[k] = '');
-        const spesaShelves = {}; // NUOVO: Cassetti per la spesa
+        const spesaShelves = {}; 
 
         const searchTerm = document.getElementById('searchBar').value.toLowerCase();
         const sortBy = document.getElementById('sortBy').value;
@@ -1050,7 +1062,6 @@
         const sortFn = (a, b) => (sortBy === 'name') ? a.name.localeCompare(b.name) : new Date(a.date||'2099') - new Date(b.date||'2099');
         filteredSpesa.sort(sortFn); filteredInv.sort(sortFn);
 
-        // --- NUOVO: Raggruppiamo la spesa nei cassetti ---
         filteredSpesa.forEach(item => {
             let cat = item.category;
             if (spesaShelves[cat] === undefined) spesaShelves[cat] = '';
@@ -1090,20 +1101,17 @@
         }
         document.getElementById('dispensa-list').innerHTML = dispensaHTML || '<p style="text-align:center; color:var(--text-color); opacity:0.7;">Dispensa vuota!</p>';
 
-        // --- NUOVO: Rendering Spesa con Ordine Personalizzato ---
         let spesaHTML = '';
         let currentOrder = categoryOrders[currentSupermarket] || [];
         
-        // 1. Stampa le categorie seguendo l'ordine salvato
         currentOrder.forEach(catKey => {
             if (spesaShelves[catKey] && spesaShelves[catKey] !== '') {
                 let catName = allCategories[catKey] || 'Altro';
                 spesaHTML += `<div class="shelf-title">${catName}</div>${spesaShelves[catKey]}`;
-                spesaShelves[catKey] = ''; // Svuota il cassetto per non stamparlo due volte
+                spesaShelves[catKey] = ''; 
             }
         });
 
-        // 2. Stampa eventuali categorie rimaste fuori dall'ordine (es. nuove custom create al volo)
         for (const [catKey, htmlStr] of Object.entries(spesaShelves)) {
             if (htmlStr !== '') {
                 let catName = allCategories[catKey] || 'Altro';
@@ -1115,7 +1123,6 @@
     }
 
     function exportJSON() {
-        // Aggiunti supermercati e ordini al backup
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ 
             inventory, shoppingList, customCategories, userMemory, supermarkets, currentSupermarket, categoryOrders 
         }));
@@ -1132,8 +1139,6 @@
                     inventory = data.inventory; shoppingList = data.shoppingList || []; 
                     if(data.customCategories) { customCategories = data.customCategories; localStorage.setItem('customCategories', JSON.stringify(customCategories)); }
                     if(data.userMemory) { userMemory = data.userMemory; localStorage.setItem('userMemory', JSON.stringify(userMemory)); }
-                    
-                    // Importa i nuovi dati dei supermercati se esistono
                     if(data.supermarkets) { supermarkets = data.supermarkets; localStorage.setItem('supermarkets', JSON.stringify(supermarkets)); }
                     if(data.currentSupermarket) { currentSupermarket = data.currentSupermarket; localStorage.setItem('currentSupermarket', currentSupermarket); }
                     if(data.categoryOrders) { categoryOrders = data.categoryOrders; localStorage.setItem('categoryOrders', JSON.stringify(categoryOrders)); }
@@ -1207,7 +1212,142 @@
         document.getElementById('expiry-modal').classList.remove('active');
     }
 
-    // Inizializza i supermercati al caricamento
+    // --- FUNZIONI DI SINCRONIZZAZIONE GOOGLE DRIVE ---
+    function gapiLoaded() {
+        gapi.load('client', initializeGapiClient);
+    }
+
+    async function initializeGapiClient() {
+        await gapi.client.init({
+            discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
+        });
+        gapiInited = true;
+    }
+
+    function gisLoaded() {
+        tokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: CLIENT_ID,
+            scope: SCOPES,
+            callback: '', 
+        });
+        gisInited = true;
+    }
+
+    function handleAuthClick() {
+        if (!gapiInited || !gisInited) {
+            alert("Il modulo Google non è ancora caricato. Attendi un secondo o controlla la connessione.");
+            return;
+        }
+        if (CLIENT_ID.includes('INSERISCI_QUI_IL_TUO_CLIENT_ID')) {
+            alert("Devi prima inserire il tuo CLIENT_ID nel codice dell'app!");
+            return;
+        }
+
+        tokenClient.callback = async (resp) => {
+            if (resp.error !== undefined) {
+                throw (resp);
+            }
+            alert("✅ Accesso a Google Drive effettuato!");
+            document.getElementById('btn-sync-up').style.display = 'inline-flex';
+            document.getElementById('btn-sync-down').style.display = 'inline-flex';
+            document.getElementById('btn-login-drive').style.display = 'none';
+        };
+        
+        if (gapi.client.getToken() === null) {
+            tokenClient.requestAccessToken({prompt: 'consent'});
+        } else {
+            tokenClient.requestAccessToken({prompt: ''});
+        }
+    }
+
+    async function getDriveFileId() {
+        let response = await gapi.client.drive.files.list({
+            spaces: 'appDataFolder',
+            fields: 'files(id, name)',
+            q: "name='gestione_casa_backup.json'"
+        });
+        let files = response.result.files;
+        if (files && files.length > 0) {
+            return files[0].id;
+        }
+        return null;
+    }
+
+    async function syncToDrive() {
+        try {
+            document.getElementById('btn-sync-up').innerText = '⏳ Salvataggio...';
+            const dataStr = JSON.stringify({ inventory, shoppingList, customCategories, userMemory, supermarkets, currentSupermarket, categoryOrders });
+            const fileContent = new Blob([dataStr], {type: 'application/json'});
+            const metadata = {
+                'name': 'gestione_casa_backup.json',
+                'parents': ['appDataFolder']
+            };
+
+            let fileId = await getDriveFileId();
+            let url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
+            let method = 'POST';
+
+            if (fileId) {
+                url = `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart`;
+                method = 'PATCH';
+                delete metadata.parents;
+            }
+
+            const form = new FormData();
+            form.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'}));
+            form.append('file', fileContent);
+
+            let res = await fetch(url, {
+                method: method,
+                headers: new Headers({ 'Authorization': 'Bearer ' + gapi.client.getToken().access_token }),
+                body: form
+            });
+
+            if(res.ok) alert("☁️ Backup salvato su Google Drive con successo!");
+            else alert("Errore durante il salvataggio su Drive.");
+            document.getElementById('btn-sync-up').innerText = '⬆️ Salva sul Cloud';
+        } catch(e) {
+            alert("Errore Drive: " + e.message);
+            document.getElementById('btn-sync-up').innerText = '⬆️ Salva sul Cloud';
+        }
+    }
+
+    async function syncFromDrive() {
+        try {
+            document.getElementById('btn-sync-down').innerText = '⏳ Scaricamento...';
+            let fileId = await getDriveFileId();
+            if (!fileId) {
+                alert("Nessun backup trovato su Google Drive per questo account.");
+                document.getElementById('btn-sync-down').innerText = '⬇️ Scarica dal Cloud';
+                return;
+            }
+            let response = await gapi.client.drive.files.get({
+                fileId: fileId,
+                alt: 'media'
+            });
+            
+            let data = response.result;
+            
+            if(data.inventory) { 
+                inventory = data.inventory; shoppingList = data.shoppingList || []; 
+                if(data.customCategories) { customCategories = data.customCategories; localStorage.setItem('customCategories', JSON.stringify(customCategories)); }
+                if(data.userMemory) { userMemory = data.userMemory; localStorage.setItem('userMemory', JSON.stringify(userMemory)); }
+                if(data.supermarkets) { supermarkets = data.supermarkets; localStorage.setItem('supermarkets', JSON.stringify(supermarkets)); }
+                if(data.currentSupermarket) { currentSupermarket = data.currentSupermarket; localStorage.setItem('currentSupermarket', currentSupermarket); }
+                if(data.categoryOrders) { categoryOrders = data.categoryOrders; localStorage.setItem('categoryOrders', JSON.stringify(categoryOrders)); }
+            } else if (Array.isArray(data)) { inventory = data; shoppingList = []; }
+            
+            saveData(); saveShoppingData(); 
+            initSupermarketSelect(); updateFormCategories(); render();
+            
+            alert("☁️ Dati ripristinati da Google Drive con successo!");
+            document.getElementById('btn-sync-down').innerText = '⬇️ Scarica dal Cloud';
+        } catch(e) {
+            alert("Errore Drive: " + e.message);
+            document.getElementById('btn-sync-down').innerText = '⬇️ Scarica dal Cloud';
+        }
+    }
+
     initSupermarketSelect();
     updateFormCategories();
     render();
