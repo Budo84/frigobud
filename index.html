@@ -40,8 +40,11 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-color); padding: 20px 20px 90px 20px; transition: background-color 0.3s, color 0.3s; }
         
+        /* Contenitore centrale con Max-Width per Desktop */
+        .container { max-width: 850px; margin: 0 auto; }
+
         header { display: flex; justify-content: center; align-items: center; margin-bottom: 20px; position: relative; }
-        header h1 { font-size: 1.8rem; color: var(--text-color); }
+        header h1 { font-size: 1.8rem; color: var(--text-color); margin: 0; }
         .theme-toggle { position: absolute; right: 0; background: none; border: none; font-size: 1.5rem; cursor: pointer; padding: 5px; }
 
         input, select, button, textarea { font-size: 16px; font-family: inherit; color: var(--text-color); }
@@ -55,42 +58,79 @@
         .view.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
+        /* Ottimizzazione Pulsanti Cloud */
+        .cloud-bar { display: flex; justify-content: center; width: 100%; margin-bottom: 15px; }
+        .btn-drive, .btn-drive-sync { background: #4285F4 !important; color: white !important; width: 100%; max-width: 400px; padding: 12px; font-size: 1.05rem; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-weight: 600; transition: 0.2s; }
+        .btn-drive-sync { background: #0F9D58 !important; display: none; }
+        .btn-drive:active, .btn-drive-sync:active { transform: scale(0.98); }
+
         .form-section { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; transition: background 0.3s; }
         
         .mode-switch { display: flex; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; overflow: hidden; margin-bottom: 15px; }
         .mode-btn { flex: 1; background: none; color: var(--text-color); border-radius: 0; box-shadow: none; padding: 10px; font-size: 0.9rem; }
         .mode-btn.active { background: #2c3e50; color: white; }
 
-        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; align-items: end; }
+        /* Nuova Griglia 12 Colonne per il Form */
+        .form-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px; align-items: end; }
         .form-group { display: flex; flex-direction: column; }
         .form-group label { font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; opacity: 0.8; }
-        .form-group input[type="text"], .form-group input[type="number"], .form-group input[type="date"], .form-group select, .form-group textarea { padding: 10px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; outline: none; transition: 0.2s; width: 100%; }
+        .form-group input[type="text"], .form-group input[type="number"], .form-group input[type="date"], .form-group select, .form-group textarea { 
+            padding: 10px 12px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; outline: none; transition: 0.2s; width: 100%; height: 44px; 
+        }
+        .form-group textarea { height: auto; min-height: 80px; resize: vertical; }
         
-        .input-row { display: flex; gap: 8px; width: 100%; }
-        .btn-scan { background: #34495e; color: white; border: none; border-radius: 8px; padding: 0 15px; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; }
+        /* Regole Mobile Base */
+        .fg-name { grid-column: span 12; }
+        .fg-qty { grid-column: span 6; } /* Affiancati su mobile */
+        .fg-unit { grid-column: span 6; } /* Affiancati su mobile */
+        .fg-check { grid-column: span 12; flex-direction: row !important; align-items: center; gap: 10px; height: 44px; }
+        .fg-dest { grid-column: span 12; }
+        .fg-cat { grid-column: span 12; }
+        .fg-date { grid-column: span 12; }
+        #bulk-group { grid-column: span 12; display: none; }
+        
+        /* Stile Checkbox */
+        .fg-check input[type="checkbox"] { width: 22px; height: 22px; cursor: pointer; margin: 0; accent-color: var(--warning); }
+        .fg-check label { margin: 0; color: #e67e22; cursor: pointer; font-size: 0.95rem; line-height: 1; }
 
-        #bulk-group { grid-column: 1 / -1; display: none; }
-        #bulkText { resize: vertical; min-height: 80px; }
-        .mic-btn { background: #e74c3c; color: white; margin-top: 8px; width: 100%; }
+        .input-row { display: flex; gap: 8px; width: 100%; align-items: center; }
+        .input-row input { flex: 1; }
+        .btn-scan { background: #34495e; color: white; border: none; border-radius: 8px; width: 44px; height: 44px; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+        .mic-btn { background: #e74c3c; color: white; margin-top: 8px; width: 100%; height: 44px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer;}
         .mic-btn.listening { background: #c0392b; animation: pulse 1s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
         
         .smart-hint { font-size: 0.75rem; color: #888; margin-top: 5px; font-style: italic; }
 
-        .form-actions { display: flex; gap: 10px; grid-column: 1 / -1; justify-content: flex-end; margin-top: 10px; }
-        button { padding: 12px 16px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
-        .btn-add { background: #2c3e50; color: white; }
-        .btn-spesa { background: var(--spesa-header); color: white; }
+        .form-actions { display: flex; gap: 10px; grid-column: span 12; justify-content: flex-end; margin-top: 5px; }
+        .form-actions button { padding: 0 20px; height: 44px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+        .btn-add { background: #2c3e50; color: white; flex: 1; max-width: 150px; }
+        .btn-spesa { background: var(--spesa-header); color: white; flex: 1; max-width: 150px; }
+
+        /* Regole Desktop (schermi più larghi) */
+        @media (min-width: 768px) {
+            .fg-name { grid-column: span 6; } /* Metà riga per Nome+Scanner */
+            .fg-qty { grid-column: span 3; }  /* Un quarto per Qty */
+            .fg-unit { grid-column: span 3; } /* Un quarto per Unità */
+            .fg-dest { grid-column: span 4; }
+            .fg-cat { grid-column: span 4; }
+            .fg-date { grid-column: span 4; }
+            .form-actions button { max-width: 200px; }
+        }
         
-        .controls-section { display: flex; gap: 10px; margin-bottom: 20px; }
-        .controls-section input, .controls-section select { padding: 12px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; flex: 1; color: var(--text-color); }
+        .controls-section { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .controls-section input { flex: 2; min-width: 200px; padding: 12px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; color: var(--text-color); height: 44px;}
+        .controls-section select { flex: 1; min-width: 150px; padding: 12px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; color: var(--text-color); height: 44px;}
 
         .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 768px) { .dashboard-grid { grid-template-columns: 1fr; } }
+        
         .area { border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
         .area-header { padding: 15px; color: white; text-align: center; font-weight: 700; font-size: 1.1rem; display: flex; justify-content: space-between; align-items: center; }
         .area-content { padding: 15px; min-height: 100px; transition: background 0.3s; }
         
-        .btn-recipe { background: white; color: var(--frigo-header); padding: 5px 10px; border-radius: 6px; font-size: 0.8rem; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .btn-recipe { background: white; color: var(--frigo-header); padding: 5px 10px; border-radius: 6px; font-size: 0.8rem; box-shadow: 0 2px 4px rgba(0,0,0,0.2); border: none; font-weight:bold; cursor: pointer;}
         .btn-wa { background: #25d366; color: white; padding: 5px 10px; border-radius: 6px; font-size: 0.8rem; border: none; font-weight: 600; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
 
         #spesa-area .area-header { background: var(--spesa-header); justify-content: space-between;} 
@@ -102,6 +142,10 @@
         #dispensa-area .area-header { background: var(--dispensa-header); justify-content: center;} 
         #dispensa-area .area-content { background: var(--dispensa-color); }
 
+        .supermarket-bar { padding: 15px 15px 0 15px; background: var(--spesa-color); display:flex; gap:10px; align-items: center;}
+        .supermarket-bar select { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--input-border); font-size: 0.95rem; font-weight: bold; background: var(--input-bg); color: var(--text-color); height: 44px; }
+        .supermarket-bar button { background: var(--info); color: white; border: none; border-radius: 8px; padding: 0 15px; cursor: pointer; font-weight: 600; height: 44px; }
+
         .shelf-title { font-size: 1rem; color: var(--text-color); opacity: 0.8; margin: 15px 0 10px 0; padding-bottom: 5px; border-bottom: 2px solid var(--input-border); font-weight: 600; }
 
         .card { background: var(--card-bg); padding: 15px; border-radius: 10px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); gap: 15px; transition: background 0.3s; }
@@ -111,19 +155,20 @@
         .tag-sg { color: #e67e22; font-weight: bold; font-size: 0.85rem; }
         
         .qty-controls { display: flex; align-items: center; gap: 10px; }
-        .btn-qty { padding: 0; width: 30px; height: 30px; border-radius: 6px; background: var(--input-bg); border: 1px solid var(--input-border); color: var(--text-color); font-size: 1.2rem; }
-        .qty-text { font-size: 0.9rem; font-weight: 600; opacity: 0.9; }
+        .btn-qty { padding: 0; width: 32px; height: 32px; border-radius: 6px; background: var(--input-bg); border: 1px solid var(--input-border); color: var(--text-color); font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .qty-text { font-size: 0.95rem; font-weight: 600; opacity: 0.9; min-width: 25px; text-align: center;}
         
         .card-meta { display: flex; align-items: center; gap: 10px; justify-content: flex-end; }
         .card-date { font-size: 0.85rem; font-weight: 600; padding: 6px 10px; border-radius: 6px; background: var(--input-bg); border: 1px solid var(--input-border); display: flex; align-items: center; gap: 5px; white-space: nowrap; }
         .date-danger { background: var(--danger); color: white; border:none; }
         .date-warning { background: var(--warning); color: white; border:none; }
         
-        .btn-action-icon { background: none; border: none; font-size: 1.3rem; cursor: pointer; padding: 5px; }
+        .btn-action-icon { background: none; border: none; font-size: 1.4rem; cursor: pointer; padding: 5px; }
         .c-delete { color: var(--danger); } .c-check { color: var(--success); } .c-move { color: var(--info); } .c-edit { color: #f39c12; }
         
         .inline-date-picker { display: flex; align-items: center; gap: 8px; background: var(--card-bg); padding: 10px; border-radius: 8px; border: 1px solid var(--input-border); width: 100%; flex-wrap: wrap; }
-        .inline-date-picker select, .inline-date-picker input { flex: 1; min-width: 120px; padding: 8px; }
+        .inline-date-picker select, .inline-date-picker input { flex: 1; min-width: 120px; padding: 8px; border-radius: 6px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text-color); }
+        .inline-date-picker button { height: 36px; padding: 0 15px; font-weight: bold; }
 
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 2000; animation: fadeIn 0.3s ease; padding: 20px; }
         .modal-overlay.active { display: flex; }
@@ -133,38 +178,32 @@
         .modal-list { text-align: left; margin-bottom: 20px; }
         .modal-list h3 { font-size: 1.1rem; color: var(--text-color); margin-top: 15px; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 2px solid var(--input-border); }
         .modal-list p { margin: 8px 0; font-size: 0.95rem; color: var(--text-color); display: flex; justify-content: space-between;}
-        .modal-close { background: #2c3e50; color: white; width: 100%; padding: 12px; font-size: 1.1rem; border-radius: 10px; cursor: pointer; border: none; font-weight: bold; }
+        .modal-close { background: #2c3e50; color: white; width: 100%; padding: 12px; font-size: 1.1rem; border-radius: 10px; cursor: pointer; border: none; font-weight: bold; margin-top: 10px; }
 
         .scanner-container { background: var(--card-bg); width: 100%; max-width: 500px; border-radius: 15px; overflow: hidden; display: flex; flex-direction: column; }
         #reader { width: 100%; background: #000; min-height: 300px; }
         .scanner-footer { padding: 15px; display: flex; justify-content: center; background: var(--card-bg); }
 
         .tools-section { margin-top: 30px; text-align: center; padding: 20px; background: var(--card-bg); border-radius: 12px; }
-        .tools-section button { background: #7f8c8d; color: white; margin: 5px; display: inline-flex; font-size: 0.9rem; }
+        .tools-section button { background: #7f8c8d; color: white; margin: 5px; display: inline-flex; font-size: 0.9rem; padding: 10px 15px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer;}
         .tools-section input[type="file"] { display: none; }
-        
-        /* CSS Pulsanti Drive in alto */
-        .btn-drive { background: #4285F4 !important; color: white !important; width: 100%; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .btn-drive-sync { background: #0F9D58 !important; color: white !important; display: none; width: 100%; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
 
         @media (max-width: 768px) {
             body { padding: 15px 15px 100px 15px; }
-            .form-grid { grid-template-columns: 1fr; gap: 15px; }
-            .form-actions { flex-direction: column; width: 100%; margin-top: 5px; }
-            .form-actions button { width: 100%; }
-            .controls-section { flex-direction: column; }
-            .dashboard-grid { grid-template-columns: 1fr; }
             .card { flex-direction: column; align-items: stretch; }
             .card-info { margin-bottom: 5px; }
             .card-meta { justify-content: space-between; width: 100%; border-top: 1px solid var(--input-border); padding-top: 12px; margin-top: 5px; }
             .inline-date-picker { flex-direction: column; align-items: stretch; }
             .inline-date-picker select, .inline-date-picker input { width: 100%; }
-            .inline-date-picker button { width: 100%; margin-top: 5px; }
+            .inline-date-picker button { width: 100%; }
+            .form-actions { flex-direction: column; width: 100%; }
+            .form-actions button { width: 100%; max-width: none; }
         }
 
         @media print {
-            .bottom-nav, .form-section, .controls-section, .tools-section, .btn-action-icon, .btn-qty, .theme-toggle, .btn-recipe, .cloud-bar { display: none !important; }
+            .bottom-nav, .form-section, .controls-section, .tools-section, .btn-action-icon, .btn-qty, .theme-toggle, .btn-recipe, .cloud-bar, .supermarket-bar { display: none !important; }
             body { padding: 0; background: #fff !important; color: #000 !important; }
+            .container { max-width: 100%; }
             .view { display: block !important; } 
             .area { border: 1px solid #ddd; box-shadow: none; break-inside: avoid; }
             .area-content, .card { background: #fff !important; color: #000 !important; }
@@ -187,7 +226,7 @@
     <div class="scanner-container">
         <div id="reader"></div>
         <div class="scanner-footer">
-            <button class="modal-close" style="background: var(--danger);" onclick="stopScanner()">✖ Annulla Scanner</button>
+            <button class="modal-close" style="background: var(--danger); margin-top: 0;" onclick="stopScanner()">✖ Annulla Scanner</button>
         </div>
     </div>
 </div>
@@ -213,7 +252,7 @@
         <button class="theme-toggle" onclick="toggleTheme()" id="theme-icon">🌙</button>
     </header>
 
-    <div class="cloud-bar" style="margin-bottom: 20px; display: flex; justify-content: center; width: 100%;">
+    <div class="cloud-bar">
         <button id="btn-login-drive" class="btn-drive" onclick="handleAuthClick()">☁️ Connetti a Google Drive</button>
         <button id="btn-sync-smart" class="btn-drive-sync" onclick="syncSmart()">🔄 Sincronizza Cloud</button>
     </div>
@@ -225,25 +264,27 @@
         </div>
 
         <div class="form-grid">
-            <div class="form-group single-only">
+            <div class="form-group single-only fg-name">
                 <label>Alimento</label>
                 <div class="input-row">
                     <input type="text" id="name" placeholder="es. Pollo (o scansiona)">
                     <button type="button" class="btn-scan" onclick="startScanner()" title="Scansiona Codice a Barre">📷</button>
                 </div>
             </div>
-            <div class="form-group single-only">
+            
+            <div class="form-group single-only fg-qty">
                 <label>Quantità</label>
                 <input type="number" id="qty" placeholder="es. 2" value="1" min="1">
             </div>
-            <div class="form-group single-only">
+            
+            <div class="form-group single-only fg-unit">
                 <label>Unità</label>
                 <input type="text" id="unit" placeholder="es. fette, kg">
             </div>
 
-            <div class="form-group single-only" style="grid-column: 1 / -1; flex-direction: row; align-items: center; gap: 8px; margin-bottom: 5px;">
-                <input type="checkbox" id="isGlutenFree" style="width: 22px; height: 22px; cursor: pointer;">
-                <label for="isGlutenFree" style="margin: 0; color: #e67e22; opacity: 1; cursor: pointer; font-size: 0.95rem;">🌾 Segna come "Senza Glutine"</label>
+            <div class="form-group single-only fg-check">
+                <input type="checkbox" id="isGlutenFree">
+                <label for="isGlutenFree">🌾 Segna come "Senza Glutine"</label>
             </div>
 
             <div class="form-group" id="bulk-group">
@@ -253,7 +294,7 @@
                 <button class="mic-btn" id="mic-btn" onclick="startDictation()">🎙️ Avvia Dettatura</button>
             </div>
 
-            <div class="form-group">
+            <div class="form-group fg-dest">
                 <label>Destinazione (Base)</label>
                 <select id="location" onchange="updateFormCategories()">
                     <option value="frigo">Frigorifero</option>
@@ -261,11 +302,13 @@
                     <option value="dispensa">Dispensa</option>
                 </select>
             </div>
-            <div class="form-group single-only">
+            
+            <div class="form-group single-only fg-cat">
                 <label id="categoryLabel">Categoria / Ripiano</label>
                 <select id="category" onchange="checkNewCategory()"></select>
             </div>
-            <div class="form-group">
+            
+            <div class="form-group fg-date">
                 <label id="dateLabel">Data (Opzionale)</label>
                 <input type="date" id="date">
             </div>
@@ -306,16 +349,16 @@
                 <span>🛒 Lista della Spesa</span>
                 <button class="btn-wa" onclick="shareSpesaWhatsApp()">📲 Invia</button>
             </div>
-            <div style="padding: 15px 15px 0 15px; background: var(--spesa-color); display:flex; gap:10px;">
-                <select id="supermarket-select" onchange="changeSupermarket(this.value)" style="flex:1; padding:10px; border-radius:6px; border:1px solid var(--input-border); font-size:0.9rem; font-weight:bold;"></select>
-                <button onclick="openOrderModal()" style="background:var(--info); color:white; border:none; border-radius:6px; padding:0 15px; cursor:pointer;" title="Ordina le corsie per questo supermercato">↕️ Corsie</button>
+            <div class="supermarket-bar">
+                <select id="supermarket-select" onchange="changeSupermarket(this.value)"></select>
+                <button onclick="openOrderModal()" title="Ordina le corsie per questo supermercato">↕️ Corsie</button>
             </div>
             <div class="area-content" id="spesa-list"></div>
         </div>
     </div>
 
     <div class="tools-section">
-        <h3>Strumenti Locali</h3>
+        <h3 style="margin-top: 0; margin-bottom: 10px;">Strumenti Locali</h3>
         <button onclick="window.print()">📄 Salva PDF</button>
         <button onclick="exportJSON()">⬇️ Backup Locale</button>
         <button onclick="document.getElementById('importFile').click()">⬆️ Ripristina File</button>
