@@ -143,9 +143,9 @@
         .tools-section button { background: #7f8c8d; color: white; margin: 5px; display: inline-flex; font-size: 0.9rem; }
         .tools-section input[type="file"] { display: none; }
         
-        /* CSS Pulsanti Drive aggiornati */
-        .btn-drive { background: #4285F4 !important; width: 100%; justify-content: center; }
-        .btn-drive-sync { background: #0F9D58 !important; display: none; width: 100%; justify-content: center; }
+        /* CSS Pulsanti Drive in alto */
+        .btn-drive { background: #4285F4 !important; color: white !important; width: 100%; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .btn-drive-sync { background: #0F9D58 !important; color: white !important; display: none; width: 100%; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
 
         @media (max-width: 768px) {
             body { padding: 15px 15px 100px 15px; }
@@ -163,7 +163,7 @@
         }
 
         @media print {
-            .bottom-nav, .form-section, .controls-section, .tools-section, .btn-action-icon, .btn-qty, .theme-toggle, .btn-recipe { display: none !important; }
+            .bottom-nav, .form-section, .controls-section, .tools-section, .btn-action-icon, .btn-qty, .theme-toggle, .btn-recipe, .cloud-bar { display: none !important; }
             body { padding: 0; background: #fff !important; color: #000 !important; }
             .view { display: block !important; } 
             .area { border: 1px solid #ddd; box-shadow: none; break-inside: avoid; }
@@ -212,6 +212,11 @@
         <h1>Gestione Casa</h1>
         <button class="theme-toggle" onclick="toggleTheme()" id="theme-icon">🌙</button>
     </header>
+
+    <div class="cloud-bar" style="margin-bottom: 20px; display: flex; justify-content: center; width: 100%;">
+        <button id="btn-login-drive" class="btn-drive" onclick="handleAuthClick()">☁️ Connetti a Google Drive</button>
+        <button id="btn-sync-smart" class="btn-drive-sync" onclick="syncSmart()">🔄 Sincronizza Cloud</button>
+    </div>
 
     <div class="form-section">
         <div class="mode-switch">
@@ -310,11 +315,7 @@
     </div>
 
     <div class="tools-section">
-        <h3>Sincronizzazione Cloud</h3>
-        <button id="btn-login-drive" class="btn-drive" onclick="handleAuthClick()">☁️ Connetti a Google Drive</button>
-        <button id="btn-sync-smart" class="btn-drive-sync" onclick="syncSmart()">🔄 Sincronizza Cloud</button>
-        
-        <h3 style="margin-top: 20px;">Strumenti Locali</h3>
+        <h3>Strumenti Locali</h3>
         <button onclick="window.print()">📄 Salva PDF</button>
         <button onclick="exportJSON()">⬇️ Backup Locale</button>
         <button onclick="document.getElementById('importFile').click()">⬆️ Ripristina File</button>
@@ -331,7 +332,7 @@
     let gapiInited = false;
     let gisInited = false;
 
-    // --- NUOVA LOGICA: GESTIONE ORARIO DI MODIFICA ---
+    // --- LOGICA: GESTIONE ORARIO DI MODIFICA ---
     let isSyncing = false; 
     
     if (!localStorage.getItem('localLastModified')) {
@@ -1006,7 +1007,6 @@
 
     function deleteItem(id) { inventory = inventory.filter(item => item.id !== id); saveData(); render(); }
     
-    // --- Funzioni di salvataggio aggiornate per registrare la modifica locale ---
     function saveData() { 
         localStorage.setItem('fridgeData', JSON.stringify(inventory)); 
         markLocalChange();
