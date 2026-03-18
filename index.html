@@ -157,12 +157,17 @@
         .supermarket-bar select { flex: 1; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--input-border); font-size: 0.9rem; font-weight: bold; background: var(--input-bg); color: var(--text-color); height: 40px; }
         .supermarket-bar button { background: var(--info); color: white; border: none; border-radius: 8px; padding: 0 12px; cursor: pointer; font-weight: 600; height: 40px; font-size: 0.9rem;}
 
-        /* CSS AGGIORNATO PER RIPIANI A SOFFIETTO (ACCORDION) */
         .shelf-wrapper { margin-bottom: 15px; }
         .shelf-title { display: flex; justify-content: space-between; align-items: center; font-size: 1rem; color: var(--text-color); opacity: 0.8; margin: 10px 0 8px 0; padding-bottom: 4px; border-bottom: 2px solid var(--input-border); font-weight: 600; cursor: pointer;}
         .shelf-toggle-icon { font-size: 0.8rem; transition: transform 0.2s; }
 
-        .card { background: var(--card-bg); padding: 12px; border-radius: 10px; margin-bottom: 10px; display: flex; flex-direction: column; align-items: stretch; box-shadow: 0 2px 5px rgba(0,0,0,0.1); gap: 8px; transition: background 0.3s; }
+        /* NUOVI STILI PER LE GESTURES (SWIPE) */
+        .card-wrapper { position: relative; overflow: hidden; border-radius: 10px; margin-bottom: 10px; touch-action: pan-y; background: var(--card-bg); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .card-front { background: var(--card-bg); padding: 12px; display: flex; flex-direction: column; align-items: stretch; gap: 8px; position: relative; z-index: 2; margin-bottom: 0 !important; width: 100%; border-radius: 10px; }
+        .swipe-bg { position: absolute; top:0; bottom:0; width: 100%; display: flex; align-items: center; padding: 0 20px; font-size: 1.5rem; color: white; z-index: 1; font-weight: bold; }
+        .swipe-left-bg { right: 0; justify-content: flex-end; background: var(--danger); }
+        .swipe-right-bg { left: 0; justify-content: flex-start; } /* Colore impostato via JS (Verde/Viola) */
+
         .card-info { display: flex; align-items: center; gap: 10px; flex: 1; }
         .card-icon { font-size: 1.6rem; }
         .card-details h4 { margin: 0 0 4px 0; font-size: 1rem; line-height: 1.2; }
@@ -206,18 +211,16 @@
         @media (min-width: 768px) {
             body { padding: 0; display: flex; height: 100vh; overflow: hidden; }
             
-            /* Sidebar a sinistra */
             .bottom-nav { 
                 position: relative; width: 250px; height: 100vh; flex-direction: column; justify-content: flex-start; 
                 border-right: 1px solid var(--input-border); box-shadow: none; padding-bottom: 0; z-index: 10;
             }
             .desktop-title { display: block; }
-            header h1 { display: none; } /* Nascondo il titolo centrale su PC */
+            header h1 { display: none; } 
             .nav-item { padding: 15px 25px; border-bottom: none; border-left: 4px solid transparent; text-align: left; display: flex; align-items: center; gap: 15px; font-size: 1.05rem; }
             .nav-item.active { border-bottom: none; border-left: 4px solid var(--text-color); background: var(--nav-active-bg); }
             .nav-icon { margin-bottom: 0; font-size: 1.4rem; }
             
-            /* Contenitore fluido per il resto dello schermo */
             .container { flex: 1; max-width: none; padding: 25px 40px; margin: 0; height: 100vh; overflow-y: auto; }
             
             header { justify-content: flex-end; margin-bottom: 30px; }
@@ -226,7 +229,6 @@
 
             .fab-btn { bottom: 30px; right: 30px; width: 75px; height: 75px; font-size: 2.5rem; }
 
-            /* Il form entra da destra su PC */
             .form-section {
                 top: 0; right: 0; bottom: auto; left: auto;
                 width: 450px; height: 100vh; border-radius: 0;
@@ -237,13 +239,12 @@
             .controls-section { flex-direction: row; gap: 15px; margin-bottom: 25px; max-width: 800px; }
             .dashboard-grid { grid-template-columns: 1fr; gap: 20px; }
             
-            /* GRIGLIA A MOSAICO OTTIMIZZATA PER ACCORDION */
             .area-content { display: block; }
             .shelf-wrapper { margin-bottom: 25px; }
             .shelf-title { margin-top: 0; padding-bottom: 8px;}
             .shelf-content { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 15px; align-items: start; padding-top: 10px;}
             
-            .card { flex-direction: row; align-items: center; padding: 15px; margin-bottom: 0; }
+            .card-front { flex-direction: row; align-items: center; padding: 15px; }
             .card-info { margin-bottom: 0; }
             .card-meta { justify-content: flex-end; width: auto; border-top: none; padding-top: 0; }
             
@@ -251,7 +252,6 @@
             .form-actions button { width: auto; flex: 1; }
         }
 
-        /* Adattamenti Header per schermi piccolissimi */
         @media (max-width: 400px) {
             header h1 { font-size: 1.3rem; }
             .btn-drive-small, .btn-sync-small { font-size: 0.75rem; padding: 5px 8px; }
@@ -265,9 +265,10 @@
             .view { display: block !important; } 
             .area { border: 1px solid #ddd; box-shadow: none; break-inside: avoid; }
             .area-content { display: block; }
-            .shelf-content { display: block !important; } /* Forza l'apertura in stampa */
-            .area-content, .card { background: #fff !important; color: #000 !important; }
-            .card { box-shadow: none; border-bottom: 1px solid #eee; border-radius: 0; padding: 10px 0; flex-direction: row; margin-bottom: 5px; }
+            .shelf-content { display: block !important; }
+            .area-content, .card-front, .card-wrapper { background: #fff !important; color: #000 !important; box-shadow: none;}
+            .card-wrapper { border-bottom: 1px solid #eee; border-radius: 0; margin-bottom: 5px; }
+            .card-front { padding: 10px 0; flex-direction: row; }
         }
     </style>
 </head>
@@ -448,7 +449,7 @@
     let gapiInited = false;
     let gisInited = false;
 
-    // --- NUOVA FUNZIONE: TOGGLE FORM E ACCORDION ---
+    // --- FUNZIONE: TOGGLE FORM E ACCORDION ---
     function toggleForm() {
         document.getElementById('form-container').classList.toggle('open');
         document.getElementById('form-overlay').classList.toggle('active');
@@ -460,9 +461,8 @@
         const content = element.nextElementSibling;
         const icon = element.querySelector('.shelf-toggle-icon');
         
-        // Controlla se è nascosto leggendo l'attributo style
         if (content.style.display === 'none') {
-            content.style.display = ''; // Rimuove il display:none, tornando al default CSS (grid/block)
+            content.style.display = ''; 
             icon.style.transform = 'rotate(0deg)';
             collapsedShelves[shelfId] = false;
         } else {
@@ -472,6 +472,118 @@
         }
         localStorage.setItem('collapsedShelves', JSON.stringify(collapsedShelves));
     }
+
+    // --- NUOVA LOGICA: SWIPE GESTURES ---
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let swipingCard = null;
+    let isSwiping = false;
+
+    document.addEventListener('touchstart', e => {
+        const wrapper = e.target.closest('.card-wrapper');
+        // Ignora lo swipe se si cliccano i bottoni, input o select dentro la card
+        if (!wrapper || e.target.closest('button') || e.target.closest('select') || e.target.closest('input')) return;
+        
+        swipingCard = wrapper.querySelector('.card-front');
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        isSwiping = false;
+        swipingCard.style.transition = 'none';
+    }, {passive: true});
+
+    document.addEventListener('touchmove', e => {
+        if (!swipingCard) return;
+        
+        const touchCurrentX = e.touches[0].clientX;
+        const touchCurrentY = e.touches[0].clientY;
+        const deltaX = touchCurrentX - touchStartX;
+        const deltaY = touchCurrentY - touchStartY;
+        
+        if (!isSwiping) {
+            // Se il movimento verticale è maggiore di quello orizzontale, l'utente sta solo scrollando la pagina
+            if (Math.abs(deltaY) > Math.abs(deltaX)) {
+                swipingCard.style.transition = 'transform 0.3s ease';
+                swipingCard.style.transform = `translateX(0)`;
+                swipingCard = null;
+                return;
+            } else if (Math.abs(deltaX) > 10) {
+                isSwiping = true;
+            }
+        }
+        
+        if (isSwiping) {
+            let moveX = deltaX;
+            // Aggiungiamo un po' di "resistenza" se si tira troppo
+            if (moveX > 150) moveX = 150 + (moveX - 150) * 0.2;
+            if (moveX < -150) moveX = -150 + (moveX + 150) * 0.2;
+            swipingCard.style.transform = `translateX(${moveX}px)`;
+        }
+    });
+
+    document.addEventListener('touchend', e => {
+        if (!swipingCard || !isSwiping) {
+            if (swipingCard) {
+                swipingCard.style.transition = 'transform 0.3s ease';
+                swipingCard.style.transform = `translateX(0)`;
+            }
+            swipingCard = null;
+            return;
+        }
+        
+        const touchEndX = e.changedTouches[0].clientX;
+        const deltaX = touchEndX - touchStartX;
+        const wrapper = swipingCard.closest('.card-wrapper');
+        const id = Number(wrapper.dataset.id);
+        const isSpesa = wrapper.dataset.isSpesa === 'true';
+
+        swipingCard.style.transition = 'transform 0.3s ease';
+
+        if (deltaX < -80) { 
+            // Swipe a Sinistra (Elimina)
+            swipingCard.style.transform = `translateX(-100%)`;
+            setTimeout(() => {
+                if (isSpesa) deleteShoppingItem(id);
+                else deleteItem(id);
+            }, 300);
+        } else if (deltaX > 80) { 
+            // Swipe a Destra (Azione Positiva)
+            swipingCard.style.transform = `translateX(100%)`;
+            setTimeout(() => {
+                if (isSpesa) {
+                    swipingCard.style.transform = `translateX(0)`; // Rimettiamo in vista la card
+                    askDateForBoughtItem(id); // Apre menu conferma
+                } else {
+                    moveToSpesaQuick(id); // Muove da Frigo/Dispensa a Spesa
+                }
+            }, 300);
+        } else {
+            // Se non hai tirato abbastanza, la card torna al suo posto ("Effetto elastico")
+            swipingCard.style.transform = `translateX(0)`;
+        }
+        
+        swipingCard = null;
+        isSwiping = false;
+    });
+
+    // Helper per spostare rapidamente un oggetto nella spesa tramite Swipe (Azzera la QTY a 1)
+    function moveToSpesaQuick(id) {
+        const itemIndex = inventory.findIndex(i => i.id === id);
+        if(itemIndex > -1) {
+            const item = inventory[itemIndex];
+            inventory.splice(itemIndex, 1);
+            
+            let existingSpesa = findDuplicate(shoppingList, item.name, item.location, '', item.unit);
+            if (existingSpesa) {
+                existingSpesa.qty = Number(existingSpesa.qty) + 1;
+            } else {
+                item.qty = 1; 
+                item.date = ''; 
+                shoppingList.push(item);
+            }
+            saveData(); saveShoppingData(); render();
+        }
+    }
+
 
     // --- LOGICA: GESTIONE ORARIO DI MODIFICA ---
     let isSyncing = false; 
@@ -950,7 +1062,7 @@
         document.getElementById('unit').value = ''; document.getElementById('bulkText').value = '';
         document.getElementById('isGlutenFree').checked = false; 
         
-        toggleForm(); // Chiude il form automaticamente dopo aver aggiunto
+        toggleForm(); 
         render();
     }
 
@@ -1199,13 +1311,20 @@
             </div>
         `;
 
+        let swipeRightIcon = isSpesa ? '✔️' : '🛒';
+        let swipeRightColor = isSpesa ? 'var(--success)' : 'var(--spesa-header)';
+
         return `
-            <div class="card">
-                <div class="card-info">
-                    <div class="card-icon">${getIconForCategory(item.category)}</div>
-                    <div class="card-details"><h4>${item.name} ${locTag}</h4>${qtyHTML}</div>
+            <div class="card-wrapper" data-id="${item.id}" data-is-spesa="${isSpesa}">
+                <div class="swipe-bg swipe-left-bg">🗑️</div>
+                <div class="swipe-bg swipe-right-bg" style="background: ${swipeRightColor};">${swipeRightIcon}</div>
+                <div class="card card-front">
+                    <div class="card-info">
+                        <div class="card-icon">${getIconForCategory(item.category)}</div>
+                        <div class="card-details"><h4>${item.name} ${locTag}</h4>${qtyHTML}</div>
+                    </div>
+                    <div class="card-meta" id="${isSpesa ? `action-${item.id}` : `inv-action-${item.id}`}">${dateHTML}${actionsHTML}</div>
                 </div>
-                <div class="card-meta" id="${isSpesa ? `action-${item.id}` : `inv-action-${item.id}`}">${dateHTML}${actionsHTML}</div>
             </div>`;
     }
 
@@ -1472,7 +1591,6 @@
         }
     }
 
-    // FUNZIONE PRINCIPALE: SINCRONIZZAZIONE SMART
     async function syncSmart() {
         try {
             document.getElementById('btn-sync-smart').innerHTML = '⏳ Attendere...';
@@ -1494,7 +1612,6 @@
             let localTime = Number(localStorage.getItem('localLastModified')) || 0;
             
             if (localTime > cloudTime + 2000) {
-                // Controllo salvavita: il file locale è più nuovo ma è vuoto?
                 let localIsEmpty = (inventory.length === 0 && shoppingList.length === 0);
                 if (localIsEmpty) {
                     let userWantsToOverwrite = confirm("⚠️ ATTENZIONE: La tua app locale è vuota, ma ci sono dati sul Cloud!\n\nPremi [OK] se vuoi davvero CANCELLARE i dati sul Cloud.\nPremi [Annulla] per RECUPERARE i tuoi dati dal Cloud.");
