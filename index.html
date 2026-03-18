@@ -38,99 +38,83 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-color); padding: 20px 20px 90px 20px; transition: background-color 0.3s, color 0.3s; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-color); padding: 15px 15px 90px 15px; transition: background-color 0.3s, color 0.3s; }
         
-        /* Contenitore centrale con Max-Width per Desktop */
-        .container { max-width: 850px; margin: 0 auto; }
+        /* HEADER CON PULSANTI SIMMETRICI */
+        header { display: flex; justify-content: center; align-items: center; margin-bottom: 15px; position: relative; min-height: 40px; }
+        header h1 { font-size: 1.6rem; color: var(--text-color); margin: 0; text-align: center; }
+        
+        .header-drive { position: absolute; left: 0; display: flex; gap: 5px; z-index: 10; }
+        .btn-drive-small { background: #4285F4; color: white; border: none; border-radius: 20px; padding: 6px 12px; font-size: 0.85rem; font-weight: 600; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: inline-flex; align-items: center;}
+        .btn-sync-small { background: #0F9D58; color: white; border: none; border-radius: 20px; padding: 6px 12px; font-size: 0.85rem; font-weight: 600; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: none; align-items: center; }
+        
+        .theme-toggle { position: absolute; right: 0; background: none; border: none; font-size: 1.5rem; cursor: pointer; padding: 5px; z-index: 10; }
 
-        header { display: flex; justify-content: center; align-items: center; margin-bottom: 20px; position: relative; }
-        header h1 { font-size: 1.8rem; color: var(--text-color); margin: 0; }
-        .theme-toggle { position: absolute; right: 0; background: none; border: none; font-size: 1.5rem; cursor: pointer; padding: 5px; }
-
-        input, select, button, textarea { font-size: 16px; font-family: inherit; color: var(--text-color); }
+        input, select, button, textarea { font-size: 15px; font-family: inherit; color: var(--text-color); }
 
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--nav-bg); box-shadow: 0 -2px 10px rgba(0,0,0,0.2); display: flex; justify-content: space-around; z-index: 1000; padding-bottom: env(safe-area-inset-bottom); transition: background 0.3s; }
-        .nav-item { flex: 1; text-align: center; padding: 12px 0; font-size: 0.85rem; font-weight: 600; color: var(--nav-text); cursor: pointer; transition: 0.2s; border-bottom: 3px solid transparent; }
+        .nav-item { flex: 1; text-align: center; padding: 10px 0; font-size: 0.85rem; font-weight: 600; color: var(--nav-text); cursor: pointer; transition: 0.2s; border-bottom: 3px solid transparent; }
         .nav-item.active { color: var(--text-color); border-bottom: 3px solid var(--text-color); background: var(--nav-active-bg); }
-        .nav-icon { font-size: 1.4rem; display: block; margin-bottom: 4px; }
+        .nav-icon { font-size: 1.3rem; display: block; margin-bottom: 2px; }
 
         .view { display: none; animation: fadeIn 0.3s ease; }
         .view.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Ottimizzazione Pulsanti Cloud */
-        .cloud-bar { display: flex; justify-content: center; width: 100%; margin-bottom: 15px; }
-        .btn-drive, .btn-drive-sync { background: #4285F4 !important; color: white !important; width: 100%; max-width: 400px; padding: 12px; font-size: 1.05rem; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-weight: 600; transition: 0.2s; }
-        .btn-drive-sync { background: #0F9D58 !important; display: none; }
-        .btn-drive:active, .btn-drive-sync:active { transform: scale(0.98); }
-
-        .form-section { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; transition: background 0.3s; }
+        .form-section { background: var(--card-bg); padding: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 15px; transition: background 0.3s; }
         
         .mode-switch { display: flex; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; overflow: hidden; margin-bottom: 15px; }
-        .mode-btn { flex: 1; background: none; color: var(--text-color); border-radius: 0; box-shadow: none; padding: 10px; font-size: 0.9rem; }
+        .mode-btn { flex: 1; background: none; color: var(--text-color); border-radius: 0; box-shadow: none; padding: 8px; font-size: 0.9rem; }
         .mode-btn.active { background: #2c3e50; color: white; }
 
-        /* Nuova Griglia 12 Colonne per il Form */
-        .form-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px; align-items: end; }
+        /* GRIGLIA FORM (Mobile First) */
+        .form-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 10px; align-items: end; }
         .form-group { display: flex; flex-direction: column; }
-        .form-group label { font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; opacity: 0.8; }
+        .form-group label { font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; opacity: 0.8; }
         .form-group input[type="text"], .form-group input[type="number"], .form-group input[type="date"], .form-group select, .form-group textarea { 
-            padding: 10px 12px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; outline: none; transition: 0.2s; width: 100%; height: 44px; 
+            padding: 8px 12px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; outline: none; transition: 0.2s; width: 100%; height: 40px; 
         }
-        .form-group textarea { height: auto; min-height: 80px; resize: vertical; }
         
-        /* Regole Mobile Base */
         .fg-name { grid-column: span 12; }
         .fg-qty { grid-column: span 6; } /* Affiancati su mobile */
         .fg-unit { grid-column: span 6; } /* Affiancati su mobile */
-        .fg-check { grid-column: span 12; flex-direction: row !important; align-items: center; gap: 10px; height: 44px; }
+        .fg-check { grid-column: span 12; flex-direction: row; align-items: center; gap: 8px; height: 40px; margin-top: 5px;}
         .fg-dest { grid-column: span 12; }
         .fg-cat { grid-column: span 12; }
         .fg-date { grid-column: span 12; }
-        #bulk-group { grid-column: span 12; display: none; }
-        
-        /* Stile Checkbox */
-        .fg-check input[type="checkbox"] { width: 22px; height: 22px; cursor: pointer; margin: 0; accent-color: var(--warning); }
-        .fg-check label { margin: 0; color: #e67e22; cursor: pointer; font-size: 0.95rem; line-height: 1; }
 
-        .input-row { display: flex; gap: 8px; width: 100%; align-items: center; }
+        /* Checkbox Stile */
+        .fg-check input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; margin: 0; accent-color: var(--warning); }
+        .fg-check label { margin: 0; color: #e67e22; cursor: pointer; font-size: 0.9rem; line-height: 1; }
+
+        /* Riga Scanner */
+        .input-row { display: flex; gap: 6px; width: 100%; align-items: center; }
         .input-row input { flex: 1; }
-        .btn-scan { background: #34495e; color: white; border: none; border-radius: 8px; width: 44px; height: 44px; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .btn-scan { background: #34495e; color: white; border: none; border-radius: 8px; width: 40px; height: 40px; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 
-        .mic-btn { background: #e74c3c; color: white; margin-top: 8px; width: 100%; height: 44px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer;}
+        #bulk-group { grid-column: span 12; display: none; }
+        #bulkText { resize: vertical; min-height: 70px; height: auto; }
+        .mic-btn { background: #e74c3c; color: white; margin-top: 8px; width: 100%; height: 40px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer;}
         .mic-btn.listening { background: #c0392b; animation: pulse 1s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
         
         .smart-hint { font-size: 0.75rem; color: #888; margin-top: 5px; font-style: italic; }
 
-        .form-actions { display: flex; gap: 10px; grid-column: span 12; justify-content: flex-end; margin-top: 5px; }
-        .form-actions button { padding: 0 20px; height: 44px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
-        .btn-add { background: #2c3e50; color: white; flex: 1; max-width: 150px; }
-        .btn-spesa { background: var(--spesa-header); color: white; flex: 1; max-width: 150px; }
+        .form-actions { display: flex; gap: 10px; grid-column: span 12; justify-content: flex-end; margin-top: 5px; flex-direction: column; width: 100%; }
+        .form-actions button { height: 40px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%; }
+        .btn-add { background: #2c3e50; color: white; }
+        .btn-spesa { background: var(--spesa-header); color: white; }
+        
+        .controls-section { display: flex; gap: 8px; margin-bottom: 15px; flex-direction: column; }
+        .controls-section input, .controls-section select { padding: 10px 12px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; flex: 1; color: var(--text-color); height: 40px;}
 
-        /* Regole Desktop (schermi più larghi) */
-        @media (min-width: 768px) {
-            .fg-name { grid-column: span 6; } /* Metà riga per Nome+Scanner */
-            .fg-qty { grid-column: span 3; }  /* Un quarto per Qty */
-            .fg-unit { grid-column: span 3; } /* Un quarto per Unità */
-            .fg-dest { grid-column: span 4; }
-            .fg-cat { grid-column: span 4; }
-            .fg-date { grid-column: span 4; }
-            .form-actions button { max-width: 200px; }
-        }
+        .dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
         
-        .controls-section { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-        .controls-section input { flex: 2; min-width: 200px; padding: 12px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; color: var(--text-color); height: 44px;}
-        .controls-section select { flex: 1; min-width: 150px; padding: 12px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; color: var(--text-color); height: 44px;}
-
-        .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        @media (max-width: 768px) { .dashboard-grid { grid-template-columns: 1fr; } }
+        .area { border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 15px; }
+        .area-header { padding: 12px 15px; color: white; text-align: center; font-weight: 700; font-size: 1.05rem; display: flex; justify-content: space-between; align-items: center; }
+        .area-content { padding: 12px; min-height: 80px; transition: background 0.3s; }
         
-        .area { border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .area-header { padding: 15px; color: white; text-align: center; font-weight: 700; font-size: 1.1rem; display: flex; justify-content: space-between; align-items: center; }
-        .area-content { padding: 15px; min-height: 100px; transition: background 0.3s; }
-        
-        .btn-recipe { background: white; color: var(--frigo-header); padding: 5px 10px; border-radius: 6px; font-size: 0.8rem; box-shadow: 0 2px 4px rgba(0,0,0,0.2); border: none; font-weight:bold; cursor: pointer;}
+        .btn-recipe { background: white; color: var(--frigo-header); padding: 5px 10px; border-radius: 6px; font-size: 0.8rem; box-shadow: 0 2px 4px rgba(0,0,0,0.2); border: none; cursor: pointer; font-weight: bold;}
         .btn-wa { background: #25d366; color: white; padding: 5px 10px; border-radius: 6px; font-size: 0.8rem; border: none; font-weight: 600; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
 
         #spesa-area .area-header { background: var(--spesa-header); justify-content: space-between;} 
@@ -142,72 +126,98 @@
         #dispensa-area .area-header { background: var(--dispensa-header); justify-content: center;} 
         #dispensa-area .area-content { background: var(--dispensa-color); }
 
-        .supermarket-bar { padding: 15px 15px 0 15px; background: var(--spesa-color); display:flex; gap:10px; align-items: center;}
-        .supermarket-bar select { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--input-border); font-size: 0.95rem; font-weight: bold; background: var(--input-bg); color: var(--text-color); height: 44px; }
-        .supermarket-bar button { background: var(--info); color: white; border: none; border-radius: 8px; padding: 0 15px; cursor: pointer; font-weight: 600; height: 44px; }
+        .supermarket-bar { padding: 12px 12px 0 12px; background: var(--spesa-color); display:flex; gap:8px; align-items: center;}
+        .supermarket-bar select { flex: 1; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--input-border); font-size: 0.9rem; font-weight: bold; background: var(--input-bg); color: var(--text-color); height: 40px; }
+        .supermarket-bar button { background: var(--info); color: white; border: none; border-radius: 8px; padding: 0 12px; cursor: pointer; font-weight: 600; height: 40px; font-size: 0.9rem;}
 
-        .shelf-title { font-size: 1rem; color: var(--text-color); opacity: 0.8; margin: 15px 0 10px 0; padding-bottom: 5px; border-bottom: 2px solid var(--input-border); font-weight: 600; }
+        .shelf-title { font-size: 1rem; color: var(--text-color); opacity: 0.8; margin: 10px 0 8px 0; padding-bottom: 4px; border-bottom: 2px solid var(--input-border); font-weight: 600; }
 
-        .card { background: var(--card-bg); padding: 15px; border-radius: 10px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); gap: 15px; transition: background 0.3s; }
-        .card-info { display: flex; align-items: center; gap: 12px; flex: 1; }
-        .card-icon { font-size: 1.8rem; }
-        .card-details h4 { margin: 0 0 5px 0; font-size: 1.05rem; line-height: 1.2; }
-        .tag-sg { color: #e67e22; font-weight: bold; font-size: 0.85rem; }
+        .card { background: var(--card-bg); padding: 12px; border-radius: 10px; margin-bottom: 10px; display: flex; flex-direction: column; align-items: stretch; box-shadow: 0 2px 5px rgba(0,0,0,0.1); gap: 8px; transition: background 0.3s; }
+        .card-info { display: flex; align-items: center; gap: 10px; flex: 1; }
+        .card-icon { font-size: 1.6rem; }
+        .card-details h4 { margin: 0 0 4px 0; font-size: 1rem; line-height: 1.2; }
+        .tag-sg { color: #e67e22; font-weight: bold; font-size: 0.8rem; }
         
-        .qty-controls { display: flex; align-items: center; gap: 10px; }
-        .btn-qty { padding: 0; width: 32px; height: 32px; border-radius: 6px; background: var(--input-bg); border: 1px solid var(--input-border); color: var(--text-color); font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .qty-text { font-size: 0.95rem; font-weight: 600; opacity: 0.9; min-width: 25px; text-align: center;}
+        .qty-controls { display: flex; align-items: center; gap: 8px; }
+        .btn-qty { padding: 0; width: 30px; height: 30px; border-radius: 6px; background: var(--input-bg); border: 1px solid var(--input-border); color: var(--text-color); font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .qty-text { font-size: 0.9rem; font-weight: 600; opacity: 0.9; min-width: 25px; text-align: center;}
         
-        .card-meta { display: flex; align-items: center; gap: 10px; justify-content: flex-end; }
-        .card-date { font-size: 0.85rem; font-weight: 600; padding: 6px 10px; border-radius: 6px; background: var(--input-bg); border: 1px solid var(--input-border); display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+        .card-meta { display: flex; align-items: center; gap: 8px; justify-content: space-between; border-top: 1px solid var(--input-border); padding-top: 10px; width: 100%; }
+        .card-date { font-size: 0.8rem; font-weight: 600; padding: 4px 8px; border-radius: 6px; background: var(--input-bg); border: 1px solid var(--input-border); display: flex; align-items: center; gap: 4px; white-space: nowrap; }
         .date-danger { background: var(--danger); color: white; border:none; }
         .date-warning { background: var(--warning); color: white; border:none; }
         
-        .btn-action-icon { background: none; border: none; font-size: 1.4rem; cursor: pointer; padding: 5px; }
+        .btn-action-icon { background: none; border: none; font-size: 1.3rem; cursor: pointer; padding: 4px; }
         .c-delete { color: var(--danger); } .c-check { color: var(--success); } .c-move { color: var(--info); } .c-edit { color: #f39c12; }
         
-        .inline-date-picker { display: flex; align-items: center; gap: 8px; background: var(--card-bg); padding: 10px; border-radius: 8px; border: 1px solid var(--input-border); width: 100%; flex-wrap: wrap; }
-        .inline-date-picker select, .inline-date-picker input { flex: 1; min-width: 120px; padding: 8px; border-radius: 6px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text-color); }
-        .inline-date-picker button { height: 36px; padding: 0 15px; font-weight: bold; }
+        .inline-date-picker { display: flex; align-items: stretch; gap: 6px; background: var(--card-bg); padding: 8px; border-radius: 8px; border: 1px solid var(--input-border); width: 100%; flex-direction: column; }
+        .inline-date-picker select, .inline-date-picker input { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text-color); height: 38px; }
+        .inline-date-picker button { height: 38px; padding: 0 15px; font-weight: bold; width: 100%; }
 
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 2000; animation: fadeIn 0.3s ease; padding: 20px; }
         .modal-overlay.active { display: flex; }
         
-        .modal-content { background: var(--card-bg); padding: 25px; border-radius: 15px; width: 100%; max-width: 400px; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.3); text-align: center; }
-        .modal-content h2 { margin-bottom: 15px; color: var(--danger); font-size: 1.4rem; }
-        .modal-list { text-align: left; margin-bottom: 20px; }
-        .modal-list h3 { font-size: 1.1rem; color: var(--text-color); margin-top: 15px; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 2px solid var(--input-border); }
-        .modal-list p { margin: 8px 0; font-size: 0.95rem; color: var(--text-color); display: flex; justify-content: space-between;}
-        .modal-close { background: #2c3e50; color: white; width: 100%; padding: 12px; font-size: 1.1rem; border-radius: 10px; cursor: pointer; border: none; font-weight: bold; margin-top: 10px; }
+        .modal-content { background: var(--card-bg); padding: 20px; border-radius: 15px; width: 100%; max-width: 400px; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.3); text-align: center; }
+        .modal-content h2 { margin-bottom: 12px; color: var(--danger); font-size: 1.3rem; }
+        .modal-list { text-align: left; margin-bottom: 15px; }
+        .modal-list h3 { font-size: 1.05rem; color: var(--text-color); margin-top: 15px; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 2px solid var(--input-border); }
+        .modal-list p { margin: 8px 0; font-size: 0.9rem; color: var(--text-color); display: flex; justify-content: space-between;}
+        .modal-close { background: #2c3e50; color: white; width: 100%; padding: 10px; font-size: 1rem; border-radius: 10px; cursor: pointer; border: none; font-weight: bold; margin-top: 10px; }
 
         .scanner-container { background: var(--card-bg); width: 100%; max-width: 500px; border-radius: 15px; overflow: hidden; display: flex; flex-direction: column; }
         #reader { width: 100%; background: #000; min-height: 300px; }
         .scanner-footer { padding: 15px; display: flex; justify-content: center; background: var(--card-bg); }
 
-        .tools-section { margin-top: 30px; text-align: center; padding: 20px; background: var(--card-bg); border-radius: 12px; }
-        .tools-section button { background: #7f8c8d; color: white; margin: 5px; display: inline-flex; font-size: 0.9rem; padding: 10px 15px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer;}
+        .tools-section { margin-top: 20px; text-align: center; padding: 15px; background: var(--card-bg); border-radius: 12px; }
+        .tools-section button { background: #7f8c8d; color: white; margin: 4px; display: inline-flex; font-size: 0.85rem; padding: 8px 12px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer;}
         .tools-section input[type="file"] { display: none; }
 
-        @media (max-width: 768px) {
-            body { padding: 15px 15px 100px 15px; }
-            .card { flex-direction: column; align-items: stretch; }
-            .card-info { margin-bottom: 5px; }
-            .card-meta { justify-content: space-between; width: 100%; border-top: 1px solid var(--input-border); padding-top: 12px; margin-top: 5px; }
-            .inline-date-picker { flex-direction: column; align-items: stretch; }
-            .inline-date-picker select, .inline-date-picker input { width: 100%; }
-            .inline-date-picker button { width: 100%; }
-            .form-actions { flex-direction: column; width: 100%; }
-            .form-actions button { width: 100%; max-width: none; }
+        /* GRIGLIA PER SCHERMI LARGHI (PC / TABLET ORIZZONTALE) */
+        @media (min-width: 768px) {
+            body { padding: 20px 20px 90px 20px; }
+            header { margin-bottom: 20px; }
+            header h1 { font-size: 1.8rem; }
+            .btn-drive-small, .btn-sync-small { font-size: 0.9rem; padding: 8px 15px; }
+            
+            .form-section { padding: 20px; margin-bottom: 20px; }
+            
+            /* Svolgimento in riga della form su PC */
+            .fg-name { grid-column: span 4; }
+            .fg-qty { grid-column: span 2; }
+            .fg-unit { grid-column: span 2; }
+            .fg-check { grid-column: span 4; justify-content: center; margin-top: 0;}
+            .fg-dest { grid-column: span 4; }
+            .fg-cat { grid-column: span 4; }
+            .fg-date { grid-column: span 4; }
+            
+            .form-actions { flex-direction: row; margin-top: 10px; }
+            .form-actions button { max-width: 200px; width: auto; }
+            
+            .controls-section { flex-direction: row; gap: 10px; margin-bottom: 20px; }
+            .dashboard-grid { grid-template-columns: 1fr 1fr; gap: 20px; }
+            
+            .card { flex-direction: row; align-items: center; padding: 15px; margin-bottom: 12px; }
+            .card-info { margin-bottom: 0; }
+            .card-meta { justify-content: flex-end; width: auto; border-top: none; padding-top: 0; }
+            .inline-date-picker { flex-direction: row; align-items: center; width: auto; padding: 10px; }
+            .inline-date-picker select, .inline-date-picker input { width: auto; }
+            .inline-date-picker button { width: auto; }
+        }
+
+        /* Adattamenti Header per schermi piccolissimi */
+        @media (max-width: 400px) {
+            header h1 { font-size: 1.3rem; }
+            .btn-drive-small, .btn-sync-small { font-size: 0.75rem; padding: 5px 8px; }
+            .theme-toggle { font-size: 1.3rem; }
         }
 
         @media print {
-            .bottom-nav, .form-section, .controls-section, .tools-section, .btn-action-icon, .btn-qty, .theme-toggle, .btn-recipe, .cloud-bar, .supermarket-bar { display: none !important; }
+            .bottom-nav, .form-section, .controls-section, .tools-section, .btn-action-icon, .btn-qty, .theme-toggle, .btn-recipe, .header-drive, .supermarket-bar { display: none !important; }
             body { padding: 0; background: #fff !important; color: #000 !important; }
-            .container { max-width: 100%; }
             .view { display: block !important; } 
             .area { border: 1px solid #ddd; box-shadow: none; break-inside: avoid; }
             .area-content, .card { background: #fff !important; color: #000 !important; }
-            .card { box-shadow: none; border-bottom: 1px solid #eee; border-radius: 0; padding: 10px 0; }
+            .card { box-shadow: none; border-bottom: 1px solid #eee; border-radius: 0; padding: 10px 0; flex-direction: row; }
         }
     </style>
 </head>
@@ -248,14 +258,15 @@
 
 <div class="container">
     <header>
+        <div class="header-drive">
+            <button id="btn-login-drive" class="btn-drive-small" onclick="handleAuthClick()">☁️ Connetti</button>
+            <button id="btn-sync-smart" class="btn-sync-small" onclick="syncSmart()">🔄 Sync</button>
+        </div>
+        
         <h1>Gestione Casa</h1>
+        
         <button class="theme-toggle" onclick="toggleTheme()" id="theme-icon">🌙</button>
     </header>
-
-    <div class="cloud-bar">
-        <button id="btn-login-drive" class="btn-drive" onclick="handleAuthClick()">☁️ Connetti a Google Drive</button>
-        <button id="btn-sync-smart" class="btn-drive-sync" onclick="syncSmart()">🔄 Sincronizza Cloud</button>
-    </div>
 
     <div class="form-section">
         <div class="mode-switch">
@@ -1329,9 +1340,8 @@
     // FUNZIONE PRINCIPALE: SINCRONIZZAZIONE SMART
     async function syncSmart() {
         try {
-            document.getElementById('btn-sync-smart').innerText = '⏳ Controllo in corso...';
+            document.getElementById('btn-sync-smart').innerHTML = '⏳ Attendere...';
             
-            // 1. Cerchiamo il file su Drive e leggiamo la sua data di modifica
             let response = await gapi.client.drive.files.list({
                 spaces: 'appDataFolder',
                 fields: 'files(id, modifiedTime)',
@@ -1340,7 +1350,6 @@
             let files = response.result.files;
             
             if (!files || files.length === 0) {
-                // Il file non esiste sul cloud, forziamo l'upload locale
                 await syncToDrive(null);
                 return;
             }
@@ -1349,26 +1358,22 @@
             let cloudTime = new Date(cloudFile.modifiedTime).getTime();
             let localTime = Number(localStorage.getItem('localLastModified')) || 0;
             
-            // Logica di confronto (con 2 secondi di tolleranza)
             if (localTime > cloudTime + 2000) {
-                // I dati locali sono più recenti -> Carica su Drive
                 await syncToDrive(cloudFile.id);
             } else if (cloudTime > localTime + 2000) {
-                // I dati su Cloud sono più recenti -> Scarica da Drive
                 await syncFromDrive(cloudFile.id, cloudFile.modifiedTime);
             } else {
-                // I dati sono identici
                 alert("✅ I dati sono già perfettamente sincronizzati!");
-                document.getElementById('btn-sync-smart').innerText = '🔄 Sincronizza Cloud';
+                document.getElementById('btn-sync-smart').innerHTML = '🔄 Sync';
             }
         } catch(e) {
             alert("Errore di sincronizzazione: " + e.message);
-            document.getElementById('btn-sync-smart').innerText = '🔄 Sincronizza Cloud';
+            document.getElementById('btn-sync-smart').innerHTML = '🔄 Sync';
         }
     }
 
     async function syncToDrive(fileId) {
-        document.getElementById('btn-sync-smart').innerText = '⬆️ Salvataggio in Cloud...';
+        document.getElementById('btn-sync-smart').innerHTML = '⬆️ Salvo...';
         const dataStr = JSON.stringify({ inventory, shoppingList, customCategories, userMemory, supermarkets, currentSupermarket, categoryOrders });
         const fileContent = new Blob([dataStr], {type: 'application/json'});
         const metadata = { 'name': 'gestione_casa_backup.json' };
@@ -1395,7 +1400,6 @@
 
         if(res.ok) {
             let resultData = await res.json();
-            // Aggiorniamo l'orologio locale in modo che combaci perfettamente con quello del Cloud
             isSyncing = true;
             localStorage.setItem('localLastModified', new Date(resultData.modifiedTime).getTime());
             isSyncing = false;
@@ -1404,11 +1408,11 @@
         } else {
             alert("Errore durante il salvataggio su Drive.");
         }
-        document.getElementById('btn-sync-smart').innerText = '🔄 Sincronizza Cloud';
+        document.getElementById('btn-sync-smart').innerHTML = '🔄 Sync';
     }
 
     async function syncFromDrive(fileId, cloudModifiedTime) {
-        document.getElementById('btn-sync-smart').innerText = '⬇️ Scaricamento dal Cloud...';
+        document.getElementById('btn-sync-smart').innerHTML = '⬇️ Scarico...';
         let response = await gapi.client.drive.files.get({
             fileId: fileId,
             alt: 'media'
@@ -1425,7 +1429,6 @@
             if(data.categoryOrders) { categoryOrders = data.categoryOrders; localStorage.setItem('categoryOrders', JSON.stringify(categoryOrders)); }
         } else if (Array.isArray(data)) { inventory = data; shoppingList = []; }
         
-        // Blocchiamo l'orologio mentre salviamo i dati scaricati per non far credere all'app che siano "nuovi"
         isSyncing = true;
         saveData(); 
         saveShoppingData(); 
@@ -1435,7 +1438,7 @@
         initSupermarketSelect(); updateFormCategories(); render();
         
         alert("☁️ Dati aggiornati da Google Drive (La versione sul Cloud era più recente).");
-        document.getElementById('btn-sync-smart').innerText = '🔄 Sincronizza Cloud';
+        document.getElementById('btn-sync-smart').innerHTML = '🔄 Sync';
     }
 
     initSupermarketSelect();
