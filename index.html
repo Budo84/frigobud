@@ -157,7 +157,10 @@
         .supermarket-bar select { flex: 1; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--input-border); font-size: 0.9rem; font-weight: bold; background: var(--input-bg); color: var(--text-color); height: 40px; }
         .supermarket-bar button { background: var(--info); color: white; border: none; border-radius: 8px; padding: 0 12px; cursor: pointer; font-weight: 600; height: 40px; font-size: 0.9rem;}
 
-        .shelf-title { font-size: 1rem; color: var(--text-color); opacity: 0.8; margin: 10px 0 8px 0; padding-bottom: 4px; border-bottom: 2px solid var(--input-border); font-weight: 600; }
+        /* CSS AGGIORNATO PER RIPIANI A SOFFIETTO (ACCORDION) */
+        .shelf-wrapper { margin-bottom: 15px; }
+        .shelf-title { display: flex; justify-content: space-between; align-items: center; font-size: 1rem; color: var(--text-color); opacity: 0.8; margin: 10px 0 8px 0; padding-bottom: 4px; border-bottom: 2px solid var(--input-border); font-weight: 600; cursor: pointer;}
+        .shelf-toggle-icon { font-size: 0.8rem; transition: transform 0.2s; }
 
         .card { background: var(--card-bg); padding: 12px; border-radius: 10px; margin-bottom: 10px; display: flex; flex-direction: column; align-items: stretch; box-shadow: 0 2px 5px rgba(0,0,0,0.1); gap: 8px; transition: background 0.3s; }
         .card-info { display: flex; align-items: center; gap: 10px; flex: 1; }
@@ -232,11 +235,13 @@
             }
             
             .controls-section { flex-direction: row; gap: 15px; margin-bottom: 25px; max-width: 800px; }
-            .dashboard-grid { grid-template-columns: 1fr; gap: 20px; } /* Lasciamo che le tessere si affianchino internamente */
+            .dashboard-grid { grid-template-columns: 1fr; gap: 20px; }
             
-            /* Griglia a Mosaico (Tessere) per PC */
-            .area-content { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 15px; align-items: start; }
-            .shelf-title { grid-column: 1 / -1; margin-top: 5px;}
+            /* GRIGLIA A MOSAICO OTTIMIZZATA PER ACCORDION */
+            .area-content { display: block; }
+            .shelf-wrapper { margin-bottom: 25px; }
+            .shelf-title { margin-top: 0; padding-bottom: 8px;}
+            .shelf-content { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 15px; align-items: start; padding-top: 10px;}
             
             .card { flex-direction: row; align-items: center; padding: 15px; margin-bottom: 0; }
             .card-info { margin-bottom: 0; }
@@ -254,14 +259,15 @@
         }
 
         @media print {
-            .bottom-nav, .form-section, .controls-section, .tools-section, .btn-action-icon, .btn-qty, .theme-toggle, .btn-recipe, .header-drive, .supermarket-bar, .fab-btn, .form-overlay { display: none !important; }
+            .bottom-nav, .form-section, .controls-section, .tools-section, .btn-action-icon, .btn-qty, .theme-toggle, .btn-recipe, .header-drive, .supermarket-bar, .fab-btn, .form-overlay, .shelf-toggle-icon { display: none !important; }
             body { padding: 0; background: #fff !important; color: #000 !important; display: block; height: auto; overflow: visible;}
             .container { max-width: 100%; padding: 0; margin: 0; display: block; overflow: visible;}
             .view { display: block !important; } 
             .area { border: 1px solid #ddd; box-shadow: none; break-inside: avoid; }
             .area-content { display: block; }
+            .shelf-content { display: block !important; } /* Forza l'apertura in stampa */
             .area-content, .card { background: #fff !important; color: #000 !important; }
-            .card { box-shadow: none; border-bottom: 1px solid #eee; border-radius: 0; padding: 10px 0; flex-direction: row; }
+            .card { box-shadow: none; border-bottom: 1px solid #eee; border-radius: 0; padding: 10px 0; flex-direction: row; margin-bottom: 5px; }
         }
     </style>
 </head>
@@ -442,10 +448,29 @@
     let gapiInited = false;
     let gisInited = false;
 
-    // --- NUOVA FUNZIONE: TOGGLE FORM ---
+    // --- NUOVA FUNZIONE: TOGGLE FORM E ACCORDION ---
     function toggleForm() {
         document.getElementById('form-container').classList.toggle('open');
         document.getElementById('form-overlay').classList.toggle('active');
+    }
+
+    let collapsedShelves = JSON.parse(localStorage.getItem('collapsedShelves')) || {};
+
+    function toggleShelf(element, shelfId) {
+        const content = element.nextElementSibling;
+        const icon = element.querySelector('.shelf-toggle-icon');
+        
+        // Controlla se è nascosto leggendo l'attributo style
+        if (content.style.display === 'none') {
+            content.style.display = ''; // Rimuove il display:none, tornando al default CSS (grid/block)
+            icon.style.transform = 'rotate(0deg)';
+            collapsedShelves[shelfId] = false;
+        } else {
+            content.style.display = 'none';
+            icon.style.transform = 'rotate(-90deg)';
+            collapsedShelves[shelfId] = true;
+        }
+        localStorage.setItem('collapsedShelves', JSON.stringify(collapsedShelves));
     }
 
     // --- LOGICA: GESTIONE ORARIO DI MODIFICA ---
@@ -1227,19 +1252,49 @@
 
         let frigoHTML = '';
         for (const [key, name] of Object.entries(allFrigo)) {
-            if (frigoShelves[key] !== '') frigoHTML += `<div class="shelf-title">${name}</div>${frigoShelves[key]}`;
+            if (frigoShelves[key] !== '') {
+                let display = collapsedShelves['frigo_'+key] ? 'style="display: none;"' : '';
+                let rot = collapsedShelves['frigo_'+key] ? 'style="transform: rotate(-90deg);"' : '';
+                frigoHTML += `
+                <div class="shelf-wrapper">
+                    <div class="shelf-title" onclick="toggleShelf(this, 'frigo_${key}')">
+                        <span>${name}</span><span class="shelf-toggle-icon" ${rot}>▼</span>
+                    </div>
+                    <div class="shelf-content" ${display}>${frigoShelves[key]}</div>
+                </div>`;
+            }
         }
         document.getElementById('frigo-list').innerHTML = frigoHTML || '<p style="text-align:center; color:var(--text-color); opacity:0.7;">Frigorifero vuoto!</p>';
 
         let freezerHTML = '';
         for (const [key, name] of Object.entries(allFrigo)) {
-            if (freezerShelves[key] !== '') freezerHTML += `<div class="shelf-title">${name}</div>${freezerShelves[key]}`;
+            if (freezerShelves[key] !== '') {
+                let display = collapsedShelves['freezer_'+key] ? 'style="display: none;"' : '';
+                let rot = collapsedShelves['freezer_'+key] ? 'style="transform: rotate(-90deg);"' : '';
+                freezerHTML += `
+                <div class="shelf-wrapper">
+                    <div class="shelf-title" onclick="toggleShelf(this, 'freezer_${key}')">
+                        <span>${name}</span><span class="shelf-toggle-icon" ${rot}>▼</span>
+                    </div>
+                    <div class="shelf-content" ${display}>${freezerShelves[key]}</div>
+                </div>`;
+            }
         }
         document.getElementById('freezer-list').innerHTML = freezerHTML || '<p style="text-align:center; color:var(--text-color); opacity:0.7;">Freezer vuoto!</p>';
         
         let dispensaHTML = '';
         for (const [key, name] of Object.entries(allDispensa)) {
-            if (dispensaShelves[key] !== '') dispensaHTML += `<div class="shelf-title">${name}</div>${dispensaShelves[key]}`;
+            if (dispensaShelves[key] !== '') {
+                let display = collapsedShelves['dispensa_'+key] ? 'style="display: none;"' : '';
+                let rot = collapsedShelves['dispensa_'+key] ? 'style="transform: rotate(-90deg);"' : '';
+                dispensaHTML += `
+                <div class="shelf-wrapper">
+                    <div class="shelf-title" onclick="toggleShelf(this, 'dispensa_${key}')">
+                        <span>${name}</span><span class="shelf-toggle-icon" ${rot}>▼</span>
+                    </div>
+                    <div class="shelf-content" ${display}>${dispensaShelves[key]}</div>
+                </div>`;
+            }
         }
         document.getElementById('dispensa-list').innerHTML = dispensaHTML || '<p style="text-align:center; color:var(--text-color); opacity:0.7;">Dispensa vuota!</p>';
 
@@ -1249,7 +1304,15 @@
         currentOrder.forEach(catKey => {
             if (spesaShelves[catKey] && spesaShelves[catKey] !== '') {
                 let catName = allCategories[catKey] || 'Altro';
-                spesaHTML += `<div class="shelf-title">${catName}</div>${spesaShelves[catKey]}`;
+                let display = collapsedShelves['spesa_'+catKey] ? 'style="display: none;"' : '';
+                let rot = collapsedShelves['spesa_'+catKey] ? 'style="transform: rotate(-90deg);"' : '';
+                spesaHTML += `
+                <div class="shelf-wrapper">
+                    <div class="shelf-title" onclick="toggleShelf(this, 'spesa_${catKey}')">
+                        <span>${catName}</span><span class="shelf-toggle-icon" ${rot}>▼</span>
+                    </div>
+                    <div class="shelf-content" ${display}>${spesaShelves[catKey]}</div>
+                </div>`;
                 spesaShelves[catKey] = ''; 
             }
         });
@@ -1257,7 +1320,15 @@
         for (const [catKey, htmlStr] of Object.entries(spesaShelves)) {
             if (htmlStr !== '') {
                 let catName = allCategories[catKey] || 'Altro';
-                spesaHTML += `<div class="shelf-title">${catName}</div>${htmlStr}`;
+                let display = collapsedShelves['spesa_'+catKey] ? 'style="display: none;"' : '';
+                let rot = collapsedShelves['spesa_'+catKey] ? 'style="transform: rotate(-90deg);"' : '';
+                spesaHTML += `
+                <div class="shelf-wrapper">
+                    <div class="shelf-title" onclick="toggleShelf(this, 'spesa_${catKey}')">
+                        <span>${catName}</span><span class="shelf-toggle-icon" ${rot}>▼</span>
+                    </div>
+                    <div class="shelf-content" ${display}>${htmlStr}</div>
+                </div>`;
             }
         }
 
