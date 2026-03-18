@@ -143,8 +143,9 @@
         .tools-section button { background: #7f8c8d; color: white; margin: 5px; display: inline-flex; font-size: 0.9rem; }
         .tools-section input[type="file"] { display: none; }
         
-        .btn-drive { background: #4285F4 !important; }
-        .btn-drive-sync { background: #0F9D58 !important; display: none; }
+        /* CSS Pulsanti Drive aggiornati */
+        .btn-drive { background: #4285F4 !important; width: 100%; justify-content: center; }
+        .btn-drive-sync { background: #0F9D58 !important; display: none; width: 100%; justify-content: center; }
 
         @media (max-width: 768px) {
             body { padding: 15px 15px 100px 15px; }
@@ -311,8 +312,7 @@
     <div class="tools-section">
         <h3>Sincronizzazione Cloud</h3>
         <button id="btn-login-drive" class="btn-drive" onclick="handleAuthClick()">☁️ Connetti a Google Drive</button>
-        <button id="btn-sync-up" class="btn-drive-sync" onclick="syncToDrive()">⬆️ Salva sul Cloud</button>
-        <button id="btn-sync-down" class="btn-drive-sync" onclick="syncFromDrive()">⬇️ Scarica dal Cloud</button>
+        <button id="btn-sync-smart" class="btn-drive-sync" onclick="syncSmart()">🔄 Sincronizza Cloud</button>
         
         <h3 style="margin-top: 20px;">Strumenti Locali</h3>
         <button onclick="window.print()">📄 Salva PDF</button>
@@ -330,6 +330,19 @@
     let tokenClient;
     let gapiInited = false;
     let gisInited = false;
+
+    // --- NUOVA LOGICA: GESTIONE ORARIO DI MODIFICA ---
+    let isSyncing = false; 
+    
+    if (!localStorage.getItem('localLastModified')) {
+        localStorage.setItem('localLastModified', Date.now());
+    }
+
+    function markLocalChange() {
+        if (!isSyncing) {
+            localStorage.setItem('localLastModified', Date.now());
+        }
+    }
 
     let inventory = JSON.parse(localStorage.getItem('fridgeData')) || [];
     let shoppingList = JSON.parse(localStorage.getItem('shoppingData')) || [];
@@ -418,6 +431,7 @@
                 else customCategories.frigo[catKey] = newCatName.trim();
                 
                 localStorage.setItem('customCategories', JSON.stringify(customCategories));
+                markLocalChange();
                 updateFormCategories(); 
                 selectEl.innerHTML = getCategoryOptionsHTML(loc, catKey);
             } else {
@@ -437,6 +451,7 @@
                 else customCategories.frigo[catKey] = newCatName.trim();
                 
                 localStorage.setItem('customCategories', JSON.stringify(customCategories));
+                markLocalChange();
                 updateFormCategories(); 
                 catSelect.value = catKey; 
             } else {
@@ -485,6 +500,7 @@
                     categoryOrders[newName] = [...(categoryOrders['Generico'] || [])];
                     localStorage.setItem('supermarkets', JSON.stringify(supermarkets));
                     localStorage.setItem('categoryOrders', JSON.stringify(categoryOrders));
+                    markLocalChange();
                 }
                 currentSupermarket = newName;
             }
@@ -492,6 +508,7 @@
             currentSupermarket = val;
         }
         localStorage.setItem('currentSupermarket', currentSupermarket);
+        markLocalChange();
         initSupermarketSelect();
         render();
     }
@@ -541,6 +558,7 @@
 
     function saveOrderAndClose() {
         localStorage.setItem('categoryOrders', JSON.stringify(categoryOrders));
+        markLocalChange();
         document.getElementById('order-modal').classList.remove('active');
         render(); 
     }
@@ -638,6 +656,7 @@
         
         userMemory[cleanName] = { location: loc, category: cat };
         localStorage.setItem('userMemory', JSON.stringify(userMemory));
+        markLocalChange();
     }
 
     function parseSmartItem(rawText, defaultLoc) {
@@ -986,8 +1005,16 @@
     }
 
     function deleteItem(id) { inventory = inventory.filter(item => item.id !== id); saveData(); render(); }
-    function saveData() { localStorage.setItem('fridgeData', JSON.stringify(inventory)); }
-    function saveShoppingData() { localStorage.setItem('shoppingData', JSON.stringify(shoppingList)); }
+    
+    // --- Funzioni di salvataggio aggiornate per registrare la modifica locale ---
+    function saveData() { 
+        localStorage.setItem('fridgeData', JSON.stringify(inventory)); 
+        markLocalChange();
+    }
+    function saveShoppingData() { 
+        localStorage.setItem('shoppingData', JSON.stringify(shoppingList)); 
+        markLocalChange();
+    }
 
     function checkDate(dateStr, location) {
         if(!dateStr || location === 'freezer' || location === 'dispensa') return 'card-date'; 
@@ -1209,7 +1236,7 @@
         document.getElementById('expiry-modal').classList.remove('active');
     }
 
-    // --- FUNZIONI DI SINCRONIZZAZIONE GOOGLE DRIVE ---
+    // --- FUNZIONI DI SINCRONIZZAZIONE GOOGLE DRIVE SMART ---
     function gapiLoaded() {
         gapi.load('client', initializeGapiClient);
     }
@@ -1236,7 +1263,7 @@
             return;
         }
         if (CLIENT_ID.includes('INSERISCI_QUI_IL_TUO_CLIENT_ID')) {
-            alert("Devi prima inserire il tuo CLIENT_ID nel codice dell'app!");
+            alert("Devi prima inserire il tuo CLIENT_ID nel codice dell'app alla riga 490!");
             return;
         }
 
@@ -1244,9 +1271,8 @@
             if (resp.error !== undefined) {
                 throw (resp);
             }
-            alert("✅ Accesso a Google Drive effettuato!");
-            document.getElementById('btn-sync-up').style.display = 'inline-flex';
-            document.getElementById('btn-sync-down').style.display = 'inline-flex';
+            alert("✅ Accesso a Google Drive effettuato con successo!");
+            document.getElementById('btn-sync-smart').style.display = 'inline-flex';
             document.getElementById('btn-login-drive').style.display = 'none';
         };
         
@@ -1257,92 +1283,116 @@
         }
     }
 
-    async function getDriveFileId() {
-        let response = await gapi.client.drive.files.list({
-            spaces: 'appDataFolder',
-            fields: 'files(id, name)',
-            q: "name='gestione_casa_backup.json'"
-        });
-        let files = response.result.files;
-        if (files && files.length > 0) {
-            return files[0].id;
-        }
-        return null;
-    }
-
-    async function syncToDrive() {
+    // FUNZIONE PRINCIPALE: SINCRONIZZAZIONE SMART
+    async function syncSmart() {
         try {
-            document.getElementById('btn-sync-up').innerText = '⏳ Salvataggio...';
-            const dataStr = JSON.stringify({ inventory, shoppingList, customCategories, userMemory, supermarkets, currentSupermarket, categoryOrders });
-            const fileContent = new Blob([dataStr], {type: 'application/json'});
-            const metadata = {
-                'name': 'gestione_casa_backup.json',
-                'parents': ['appDataFolder']
-            };
-
-            let fileId = await getDriveFileId();
-            let url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
-            let method = 'POST';
-
-            if (fileId) {
-                url = `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart`;
-                method = 'PATCH';
-                delete metadata.parents;
-            }
-
-            const form = new FormData();
-            form.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'}));
-            form.append('file', fileContent);
-
-            let res = await fetch(url, {
-                method: method,
-                headers: new Headers({ 'Authorization': 'Bearer ' + gapi.client.getToken().access_token }),
-                body: form
+            document.getElementById('btn-sync-smart').innerText = '⏳ Controllo in corso...';
+            
+            // 1. Cerchiamo il file su Drive e leggiamo la sua data di modifica
+            let response = await gapi.client.drive.files.list({
+                spaces: 'appDataFolder',
+                fields: 'files(id, modifiedTime)',
+                q: "name='gestione_casa_backup.json'"
             });
-
-            if(res.ok) alert("☁️ Backup salvato su Google Drive con successo!");
-            else alert("Errore durante il salvataggio su Drive.");
-            document.getElementById('btn-sync-up').innerText = '⬆️ Salva sul Cloud';
-        } catch(e) {
-            alert("Errore Drive: " + e.message);
-            document.getElementById('btn-sync-up').innerText = '⬆️ Salva sul Cloud';
-        }
-    }
-
-    async function syncFromDrive() {
-        try {
-            document.getElementById('btn-sync-down').innerText = '⏳ Scaricamento...';
-            let fileId = await getDriveFileId();
-            if (!fileId) {
-                alert("Nessun backup trovato su Google Drive per questo account.");
-                document.getElementById('btn-sync-down').innerText = '⬇️ Scarica dal Cloud';
+            let files = response.result.files;
+            
+            if (!files || files.length === 0) {
+                // Il file non esiste sul cloud, forziamo l'upload locale
+                await syncToDrive(null);
                 return;
             }
-            let response = await gapi.client.drive.files.get({
-                fileId: fileId,
-                alt: 'media'
-            });
             
-            let data = response.result;
+            let cloudFile = files[0];
+            let cloudTime = new Date(cloudFile.modifiedTime).getTime();
+            let localTime = Number(localStorage.getItem('localLastModified')) || 0;
             
-            if(data.inventory) { 
-                inventory = data.inventory; shoppingList = data.shoppingList || []; 
-                if(data.customCategories) { customCategories = data.customCategories; localStorage.setItem('customCategories', JSON.stringify(customCategories)); }
-                if(data.userMemory) { userMemory = data.userMemory; localStorage.setItem('userMemory', JSON.stringify(userMemory)); }
-                if(data.supermarkets) { supermarkets = data.supermarkets; localStorage.setItem('supermarkets', JSON.stringify(supermarkets)); }
-                if(data.currentSupermarket) { currentSupermarket = data.currentSupermarket; localStorage.setItem('currentSupermarket', currentSupermarket); }
-                if(data.categoryOrders) { categoryOrders = data.categoryOrders; localStorage.setItem('categoryOrders', JSON.stringify(categoryOrders)); }
-            } else if (Array.isArray(data)) { inventory = data; shoppingList = []; }
-            
-            saveData(); saveShoppingData(); 
-            initSupermarketSelect(); updateFormCategories(); render();
-            
-            alert("☁️ Dati ripristinati da Google Drive con successo!");
-            document.getElementById('btn-sync-down').innerText = '⬇️ Scarica dal Cloud';
+            // Logica di confronto (con 2 secondi di tolleranza)
+            if (localTime > cloudTime + 2000) {
+                // I dati locali sono più recenti -> Carica su Drive
+                await syncToDrive(cloudFile.id);
+            } else if (cloudTime > localTime + 2000) {
+                // I dati su Cloud sono più recenti -> Scarica da Drive
+                await syncFromDrive(cloudFile.id, cloudFile.modifiedTime);
+            } else {
+                // I dati sono identici
+                alert("✅ I dati sono già perfettamente sincronizzati!");
+                document.getElementById('btn-sync-smart').innerText = '🔄 Sincronizza Cloud';
+            }
         } catch(e) {
-            alert("Errore Drive: " + e.message);
-            document.getElementById('btn-sync-down').innerText = '⬇️ Scarica dal Cloud';
+            alert("Errore di sincronizzazione: " + e.message);
+            document.getElementById('btn-sync-smart').innerText = '🔄 Sincronizza Cloud';
         }
+    }
+
+    async function syncToDrive(fileId) {
+        document.getElementById('btn-sync-smart').innerText = '⬆️ Salvataggio in Cloud...';
+        const dataStr = JSON.stringify({ inventory, shoppingList, customCategories, userMemory, supermarkets, currentSupermarket, categoryOrders });
+        const fileContent = new Blob([dataStr], {type: 'application/json'});
+        const metadata = { 'name': 'gestione_casa_backup.json' };
+        
+        let url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,modifiedTime';
+        let method = 'POST';
+
+        if (!fileId) {
+            metadata.parents = ['appDataFolder'];
+        } else {
+            url = `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart&fields=id,modifiedTime`;
+            method = 'PATCH';
+        }
+
+        const form = new FormData();
+        form.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'}));
+        form.append('file', fileContent);
+
+        let res = await fetch(url, {
+            method: method,
+            headers: new Headers({ 'Authorization': 'Bearer ' + gapi.client.getToken().access_token }),
+            body: form
+        });
+
+        if(res.ok) {
+            let resultData = await res.json();
+            // Aggiorniamo l'orologio locale in modo che combaci perfettamente con quello del Cloud
+            isSyncing = true;
+            localStorage.setItem('localLastModified', new Date(resultData.modifiedTime).getTime());
+            isSyncing = false;
+            
+            alert("☁️ Dati salvati su Google Drive (La tua versione locale era più recente).");
+        } else {
+            alert("Errore durante il salvataggio su Drive.");
+        }
+        document.getElementById('btn-sync-smart').innerText = '🔄 Sincronizza Cloud';
+    }
+
+    async function syncFromDrive(fileId, cloudModifiedTime) {
+        document.getElementById('btn-sync-smart').innerText = '⬇️ Scaricamento dal Cloud...';
+        let response = await gapi.client.drive.files.get({
+            fileId: fileId,
+            alt: 'media'
+        });
+        
+        let data = response.result;
+        
+        if(data.inventory) { 
+            inventory = data.inventory; shoppingList = data.shoppingList || []; 
+            if(data.customCategories) { customCategories = data.customCategories; localStorage.setItem('customCategories', JSON.stringify(customCategories)); }
+            if(data.userMemory) { userMemory = data.userMemory; localStorage.setItem('userMemory', JSON.stringify(userMemory)); }
+            if(data.supermarkets) { supermarkets = data.supermarkets; localStorage.setItem('supermarkets', JSON.stringify(supermarkets)); }
+            if(data.currentSupermarket) { currentSupermarket = data.currentSupermarket; localStorage.setItem('currentSupermarket', currentSupermarket); }
+            if(data.categoryOrders) { categoryOrders = data.categoryOrders; localStorage.setItem('categoryOrders', JSON.stringify(categoryOrders)); }
+        } else if (Array.isArray(data)) { inventory = data; shoppingList = []; }
+        
+        // Blocchiamo l'orologio mentre salviamo i dati scaricati per non far credere all'app che siano "nuovi"
+        isSyncing = true;
+        saveData(); 
+        saveShoppingData(); 
+        localStorage.setItem('localLastModified', new Date(cloudModifiedTime).getTime());
+        isSyncing = false;
+
+        initSupermarketSelect(); updateFormCategories(); render();
+        
+        alert("☁️ Dati aggiornati da Google Drive (La versione sul Cloud era più recente).");
+        document.getElementById('btn-sync-smart').innerText = '🔄 Sincronizza Cloud';
     }
 
     initSupermarketSelect();
