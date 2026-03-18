@@ -1,4 +1,4 @@
-const CACHE_NAME = 'frigo-app-v36';
+const CACHE_NAME = 'frigo-app-v37';
 const ASSETS = [
     './',
     './index.html',
